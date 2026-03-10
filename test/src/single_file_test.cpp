@@ -5,6 +5,26 @@ int Add(int a, int b) {
   return a + b;
 }
 
+//regular comment
+
+//! alert comment
+
+//? questoin comment
+
+// TODO to comment
+
+//* highlighted comment
+
+// * this is struck through 
+
+// FIXME fix something that is broken
+
+// BUG a known bug
+
+// XXX needs more attention
+
+// NOTE this is a note 
+
 int main() {
   int x = 5;
   int y = 10;

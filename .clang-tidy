@@ -1,0 +1,44 @@
+Checks: >
+  clang-diagnostic-*,
+  clang-analyzer-*,
+  modernize-*,
+  modernize-use-nullptr,
+  modernize-use-override,
+  modernize-use-default-member-init,
+  modernize-loop-convert,
+  modernize-use-using,
+  modernize-avoid-bind,
+  performance-*,
+  performance-unnecessary-copy-initialization,
+  performance-unnecessary-value-param,
+  performance-move-const-arg,
+  performance-noexcept-move-constructor,
+  readability-*,
+  readability-identifier-naming,
+  readability-braces-around-statements,
+  readability-const-return-type,
+  readability-container-size-empty,
+  bugprone-*,
+  bugprone-use-after-move,
+  bugprone-undefined-memory-manipulation,
+  bugprone-integer-division,
+  bugprone-suspicious-memset-usage,
+  cppcoreguidelines-*,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
+  -modernize-use-trailing-return-type
+
+WarningsAsErrors: ""
+HeaderFilterRegex: "engine/include/.*"
+FormatStyle: file
+CheckOptions:
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.FunctionCase
+    value: CamelCase
+  - key: readability-identifier-naming.VariableCase
+    value: camelCase
+  - key: readability-identifier-naming.PrivateMemberPrefix
+    value: "_"
+  - key: readability-identifier-naming.ConstantCase
+    value: UPPER_CASE

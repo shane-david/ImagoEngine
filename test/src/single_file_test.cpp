@@ -1,11 +1,12 @@
 #include <iostream>
+#include <string>
 #include <vector>
 
 int Add(int a, int b) {
   return a + b;
 }
 
-//regular comment
+// regular comment
 
 //! alert comment
 
@@ -15,7 +16,7 @@ int Add(int a, int b) {
 
 //* highlighted comment
 
-// * this is struck through 
+// * this is struck through
 
 // FIXME fix something that is broken
 
@@ -23,11 +24,11 @@ int Add(int a, int b) {
 
 // XXX needs more attention
 
-// NOTE this is a note 
+// NOTE this is a note
 
 int main() {
-  int x = 5;
-  int y = 10;
+  int x      = 5;
+  int y      = 10;
   int result = Add(x, y);
 
   std::vector<int> numbers = {1, 2, 3, 4, 5};

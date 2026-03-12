@@ -42,3 +42,18 @@
 
 # do not include the build files for cmake
 build/
+
+#do not include the vcpkg installations 
+vcpkg_installed/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+# Ninja build files
+*.ninja
+build.ninja
+
+# Clang tools
+compile_commands.json

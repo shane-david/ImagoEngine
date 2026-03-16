@@ -1,0 +1,17 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Force LF for C++ source files
+*.cpp text eol=lf
+*.h text eol=lf
+*.hpp text eol=lf
+*.cmake text eol=lf
+CMakeLists.txt text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+
+# Force CRLF for Windows specific files
+*.bat text eol=crlf
+*.cmd text eol=crlf

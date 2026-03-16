@@ -3,16 +3,10 @@
   "version": "0.1.0",
   "builtin-baseline": "dd306f32e07d87fdb16837af64f33b6b415c770a",
   "dependencies": [
-    {
-      "name": "sfml",
-      "version>=": "2.6.2"
-    },
+    "sfml",
     "sdl2",
     "imgui",
-    {
-      "name": "imgui-sfml",
-      "version>=": "2.6"
-    },
+    "imgui-sfml",
     "nlohmann-json",
     "yaml-cpp",
     "spdlog",

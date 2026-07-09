@@ -5,7 +5,10 @@
   "dependencies": [
     "sfml",
     "sdl2",
-    "imgui",
+    {
+      "name": "imgui",
+      "features": ["docking-experimental"]
+    },
     "imgui-sfml",
     "nlohmann-json",
     "yaml-cpp",

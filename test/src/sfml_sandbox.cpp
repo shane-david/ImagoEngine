@@ -1,15 +1,15 @@
 // =============================================================================
 // sfml_learning.cpp
-// ImagoEngine — Phase 1 Sandbox
+// ImagoEngine Phase 1 Sandbox
 //
 // GOALS COVERED IN THIS FILE:
 //   [x] SFML window creation
 //   [x] Load texture from disk, render sprite
 //   [x] SFML keyboard input (WASD) with delta time movement
-//   [x] SFML audio — load and play a sound effect
-//   [x] SFML sf::View camera — pan and zoom with arrow keys
-//   [x] Dear ImGui + imgui-sfml — dockspace rendering alongside SFML viewport
-//   [x] SDL2 GameController — open controller, read axes, buttons, triggers
+//   [x] SFML audio load and play a sound effect
+//   [x] SFML sf::View camera pan and zoom with arrow keys
+//   [x] Dear ImGui + imgui-sfml dockspace rendering alongside SFML viewport
+//   [x] SDL2 GameController open controller, read axes, buttons, triggers
 //   [x] Log controller input values to console
 //   [x] Control sprite with controller left stick
 // =============================================================================
@@ -19,31 +19,37 @@
 // Each header gives us access to a different library or system feature.
 // -----------------------------------------------------------------------------
 
-// SFML Graphics — RenderWindow, Sprite, Texture, View, Clock, Color, etc.
+// SFML Graphics RenderWindow, Sprite, Texture, View, Clock, Color, etc.
 // Including Graphics.hpp automatically includes Window.hpp and System.hpp too,
 // so we don't need to include those separately.
 #include <SFML/Graphics.hpp>
 
-// SFML Audio — SoundBuffer, Sound, Music
+// SFML Audio SoundBuffer, Sound, Music
 // This is a separate module that needs to be included (and linked) on its own.
 #include <SFML/Audio.hpp>
 
-// Dear ImGui — the core ImGui library.
+// Dear ImGui the core ImGui library.
 // This gives us ImGui::Begin(), ImGui::Button(), ImGui::Text(), etc.
 #include "imgui.h"
 
-// imgui-SFML — the backend that connects ImGui to your SFML window.
+// imgui-SFML the backend that connects ImGui to your SFML window.
 // This gives us ImGui::SFML::Init(), Update(), Render(), Shutdown().
 #include "imgui-SFML.h"
 
-// SDL2 — we only use this for the GameController API.
-// SDL2 and SFML coexist fine in the same program — they manage different things.
+// SDL2 we only use this for the GameController API.
+// SDL2 and SFML coexist fine in the same program they manage different things.
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 
-// Standard library — for std::cout, std::cerr, std::abs
+// spdlog 
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/sinks/basic_file_sink.h>
+
+// Standard library for std::cout, std::cerr, std::abs
 #include <iostream>
 #include <cmath>
+#include <vector>
 
 // =============================================================================
 // MAIN
@@ -54,7 +60,7 @@ int main()
     // SECTION 1: SDL2 INITIALIZATION
     // SDL2 must be initialized before the SFML window is created.
     // We only pass SDL_INIT_GAMECONTROLLER because that's the only SDL2
-    // subsystem we're using — we don't need SDL's video or audio.
+    // subsystem we're using we don't need SDL's video or audio.
     // =========================================================================
     if (SDL_Init(SDL_INIT_GAMECONTROLLER) != 0)
     {
@@ -64,8 +70,27 @@ int main()
     }
 
     // =========================================================================
+    // Section 1.6: LOGGER SETUP
+    // Set up before the window so every failur after this point can 
+    // us the logger instead of std::cerr
+    // =========================================================================
+    auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    consoleSink->set_level(spdlog::level::debug); 
+
+    auto fileSink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/engine.log", true); 
+    fileSink->set_level(spdlog::level::debug); 
+
+    std::vector<spdlog::sink_ptr> sinks{consoleSink, fileSink}; 
+    auto log = std::make_shared<spdlog::logger>("Engine", sinks.begin(), sinks.end()); 
+    log->set_level(spdlog::level::trace); 
+    spdlog::register_logger(log);
+    spdlog::set_default_logger(log); 
+
+    log->info("--- ImagoEngine Sandbox Starting ---"); 
+    
+    // =========================================================================
     // SECTION 2: SFML WINDOW
-    // sf::RenderWindow is the main SFML class — it's both a window and a
+    // sf::RenderWindow is the main SFML class it's both a window and a
     // 2D drawing surface. sf::VideoMode takes the width and height as a
     // Vector2u (unsigned int vector), which is the SFML 3.0 style.
     // =========================================================================
@@ -83,19 +108,19 @@ int main()
     // =========================================================================
     if (!ImGui::SFML::Init(window))
     {
-        std::cerr << "ERROR: ImGui::SFML::Init failed." << std::endl;
+        log->critical("ImGui::SFML::Init failed.");
         SDL_Quit();
         return -1;
     }
 
     // Enable the docking feature in ImGui.
     // ImGui::GetIO() returns a reference to ImGui's global configuration struct.
-    // ConfigFlags is a bitmask — we OR in the docking flag to enable it
+    // ConfigFlags is a bitmask we OR in the docking flag to enable it
     // without clearing any other flags that might already be set.
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
     // =========================================================================
-    // SECTION 4: SFML AUDIO — SOUND EFFECT
+    // SECTION 4: SFML AUDIO SOUND EFFECT
     // Audio in SFML works like graphics:
     //   sf::SoundBuffer = sf::Texture  (holds the raw data, lives on the CPU)
     //   sf::Sound       = sf::Sprite   (lightweight playback handle)
@@ -110,36 +135,36 @@ int main()
     sf::SoundBuffer hitBuffer;
     if (!hitBuffer.loadFromFile("assets/hit.wav"))
     {
-        std::cerr << "ERROR: Could not load sound at: assets/hit.wav" << std::endl;
-        // We don't return here — missing audio is non-fatal for learning purposes.
+        log->error("Could not load sound at: {}", "assets/hit.wav"); 
+        // We don't return here missing audio is non-fatal for learning purposes.
         // In a real engine this would be a hard failure.
     }
 
     // Create the sound and attach the buffer to it.
-    // sound.play() fires the sound asynchronously — it runs on a background
+    // sound.play() fires the sound asynchronously it runs on a background
     // thread and doesn't block the game loop.
     sf::Sound hitSound(hitBuffer);
     hitSound.setVolume(75.f); // volume range is 0 (mute) to 100 (full)
 
     // =========================================================================
-    // SECTION 5: SFML GRAPHICS — TEXTURE AND SPRITE
+    // SECTION 5: SFML GRAPHICS TEXTURE AND SPRITE
     // sf::Texture loads the image data from disk onto the GPU.
     // sf::Sprite is a lightweight drawable that references the texture.
     //
-    // The texture MUST outlive the sprite — if the texture is destroyed,
+    // The texture MUST outlive the sprite if the texture is destroyed,
     // the sprite will draw garbage or crash.
     // =========================================================================
     sf::Texture playerTexture;
     if (!playerTexture.loadFromFile("assets/player.png"))
     {
-        std::cerr << "ERROR: Could not load texture at: assets/player.png" << std::endl;
+        log->error("Could not load texture at: {}", "assets/player.png"); 
         ImGui::SFML::Shutdown();
         SDL_Quit();
         return -1;
     }
 
     // Construct the sprite with the texture.
-    // In SFML 3.0, sf::Sprite requires a texture at construction time —
+    // In SFML 3.0, sf::Sprite requires a texture at construction time
     // there is no default constructor like in SFML 2.x.
     sf::Sprite playerSprite(playerTexture);
 
@@ -161,7 +186,7 @@ int main()
     // Think of it as a camera that can pan, zoom, and rotate over the world.
     //
     // window.getDefaultView() returns a view that exactly matches the window
-    // size — a good starting point.
+    // size a good starting point.
     //
     // After any modification to the view, you MUST call window.setView(view)
     // to apply the changes. The window keeps a copy of the view, not a reference.
@@ -172,7 +197,7 @@ int main()
     const float CAMERA_SPEED = 400.f;
 
     // =========================================================================
-    // SECTION 7: SDL2 CONTROLLER — OPEN FIRST CONNECTED CONTROLLER
+    // SECTION 7: SDL2 CONTROLLER OPEN FIRST CONNECTED CONTROLLER
     // SDL_NumJoysticks() returns how many joysticks/controllers are connected.
     // SDL_IsGameController() checks if a joystick supports the GameController
     // API (which gives us named buttons/axes instead of raw indices).
@@ -187,9 +212,8 @@ int main()
         {
             controller = SDL_GameControllerOpen(i);
             if (controller != nullptr)
-            {
-                std::cout << "Controller connected: "
-                          << SDL_GameControllerName(controller) << std::endl;
+            {   
+                log->info("Controller connected: {}", SDL_GameControllerName(controller)); 
                 break; // stop after finding the first valid controller
             }
         }
@@ -197,7 +221,7 @@ int main()
 
     if (controller == nullptr)
     {
-        std::cout << "No controller found — keyboard/mouse only." << std::endl;
+        log->info("No controller found keyboard/mouse only."); 
     }
 
     // Dead zone for the analog sticks.
@@ -210,7 +234,7 @@ int main()
     // SECTION 8: GAME STATE VARIABLES
     // =========================================================================
 
-    // Player velocity — reset to zero every frame, then rebuilt from input.
+    // Player velocity  reset to zero every frame, then rebuilt from input.
     sf::Vector2f playerVelocity = {0.f, 0.f};
 
     // How fast the player moves in pixels per second.
@@ -233,7 +257,8 @@ int main()
     // Each iteration: process events → update state → render → display.
     // =========================================================================
     while (window.isOpen())
-    {
+    {   
+
         // =====================================================================
         // STEP 9A: SFML EVENT LOOP
         // window.pollEvent() checks if there are any pending events (key press,
@@ -274,7 +299,7 @@ int main()
                 if (keyPressed->scancode == sf::Keyboard::Scancode::Space)
                 {
                     hitSound.play();
-                    std::cout << "Sound played!" << std::endl;
+                    log->info("Sound played!");
                 }
             }
         }
@@ -284,7 +309,7 @@ int main()
         // SDL has its own separate event queue from SFML.
         // We poll it here to detect controllers being connected/disconnected
         // while the program is running. If you only need to detect controllers
-        // at startup, this block can be skipped — but it's good practice.
+        // at startup, this block can be skipped but it's good practice.
         // =====================================================================
         SDL_Event sdlEvent;
         while (SDL_PollEvent(&sdlEvent))
@@ -295,8 +320,7 @@ int main()
                 if (controller == nullptr) // only grab if we don't have one yet
                 {
                     controller = SDL_GameControllerOpen(sdlEvent.cdevice.which);
-                    std::cout << "Controller connected: "
-                              << SDL_GameControllerName(controller) << std::endl;
+                    log->info("Controller connected: {}", SDL_GameControllerName(controller)); 
                 }
             }
 
@@ -307,7 +331,7 @@ int main()
                 {
                     SDL_GameControllerClose(controller);
                     controller = nullptr;
-                    std::cout << "Controller disconnected." << std::endl;
+                    log->info("Controller disconnected."); 
                 }
             }
         }
@@ -326,15 +350,16 @@ int main()
         // Convert delta time to seconds as a float for movement calculations.
         // At 60 FPS this is roughly 0.0166f seconds per frame.
         float dtSeconds = dt.asSeconds();
+        log->trace("Fram start - dt: {:4f}s", dtSeconds); 
 
         // =====================================================================
-        // STEP 9D: CAMERA INPUT (Arrow Keys — pan and zoom)
+        // STEP 9D: CAMERA INPUT (Arrow Keys pan and zoom)
         // sf::Keyboard::isKeyPressed() returns true every frame the key is held.
         // This is different from the KeyPressed EVENT which fires only once.
         // We use polling here because panning is a continuous held-key action.
         //
         // After modifying the view, we must call window.setView(camera) to
-        // apply it — the window stores a COPY of the view, not a reference.
+        // apply it the window stores a COPY of the view, not a reference.
         // =====================================================================
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Up))
             camera.move({0.f, -CAMERA_SPEED * dtSeconds});
@@ -424,7 +449,7 @@ int main()
             // --- Add stick input to player velocity ---
             // Dividing by 32767.f normalizes to the -1.0..1.0 range.
             // Multiplying by PLAYER_SPEED scales to pixels per second.
-            // Adding to playerVelocity means keyboard and stick input stack —
+            // Adding to playerVelocity means keyboard and stick input stack
             // both work at the same time.
             playerVelocity.x += (leftX / 32767.f) * PLAYER_SPEED;
             playerVelocity.y += (leftY / 32767.f) * PLAYER_SPEED;
@@ -439,30 +464,16 @@ int main()
 
             // --- Right trigger fires rumble ---
             // SDL_GameControllerRumble(controller, low_freq, high_freq, duration_ms)
-            // low_freq  = left motor (bass/thud feel)   — range 0..65535
-            // high_freq = right motor (buzz/vibration)  — range 0..65535
+            // low_freq  = left motor (bass/thud feel)   range 0..65535
+            // high_freq = right motor (buzz/vibration)  range 0..65535
             // Only triggers when trigger is pressed past halfway (> 16383).
             if (rightTrigger > 16383)
                 SDL_GameControllerRumble(controller, 32000, 32000, 100);
 
-            // --- LOG ALL VALUES TO CONSOLE ---
-            // This is the verification step from the checklist.
-            // Note: this prints every frame at 60fps — it will scroll fast.
-            // Comment this block out once you've confirmed it's working.
-            std::cout << "--- Controller ---"
-                      << " | LX: " << leftX
-                      << " | LY: " << leftY
-                      << " | RX: " << rightX
-                      << " | RY: " << rightY
-                      << " | LT: " << leftTrigger
-                      << " | RT: " << rightTrigger
-                      << " | A: "  << (int)buttonA
-                      << " | B: "  << (int)buttonB
-                      << std::endl;
         }
 
         // =====================================================================
-        // STEP 9G: UPDATE — MOVE SPRITE
+        // STEP 9G: UPDATE MOVE SPRITE
         // sprite.move() adds an offset to the sprite's current position.
         // Multiplying velocity by dtSeconds makes movement frame-rate independent:
         // at 60fps, dtSeconds ≈ 0.016, so velocity of 300 moves 300*0.016 = ~5px
@@ -474,7 +485,7 @@ int main()
         // STEP 9H: IMGUI UI
         // All ImGui widget calls go between ImGui::SFML::Update() and
         // ImGui::SFML::Render(). Think of this block as "defining" the UI
-        // for this frame — ImGui doesn't draw anything to the screen yet here.
+        // for this frame ImGui doesn't draw anything to the screen yet here.
         //
         // DockSpaceOverViewport MUST be called before any ImGui::Begin() calls.
         // It creates an invisible full-window host that other panels can dock into.
@@ -492,7 +503,7 @@ int main()
         // Everything between them is drawn inside that panel.
         ImGui::Begin("Debug");
 
-            // ImGui::Text() works like printf — you can embed variable values.
+            // ImGui::Text() works like printf you can embed variable values.
             sf::Vector2f pos = playerSprite.getPosition();
             ImGui::Text("Sprite Position:  X: %.1f  Y: %.1f", pos.x, pos.y);
 
@@ -538,7 +549,7 @@ int main()
 
         // Optionally show the full ImGui demo window for widget exploration.
         // ImGui::ShowDemoWindow() is a built-in function that displays hundreds
-        // of example widgets — great for learning what's available.
+        // of example widgets great for learning what's available.
         if (showDemoWindow)
             ImGui::ShowDemoWindow(&showDemoWindow);
 
@@ -569,7 +580,7 @@ int main()
     // SDL_GameControllerClose() releases the controller handle.
     // SDL_Quit() shuts down all SDL subsystems.
     // The SFML window and audio resources are destroyed automatically when
-    // they go out of scope (C++ RAII — destructors handle it).
+    // they go out of scope (C++ RAII destructors handle it).
     // =========================================================================
     ImGui::SFML::Shutdown();
 
@@ -578,19 +589,21 @@ int main()
 
     SDL_Quit();
 
+    spdlog::shutdown(); 
+
     return 0;
 }
 
 // =============================================================================
 // CONTROLS REFERENCE
 // =============================================================================
-//   WASD          — move sprite (keyboard)
-//   Arrow Keys    — pan camera
-//   Z             — zoom camera in
-//   X             — zoom camera out
-//   Space         — play sound effect
-//   Escape        — close window
-//   Left Stick    — move sprite (controller)
-//   A Button      — play sound effect (controller)
-//   Right Trigger — rumble
+//   WASD          move sprite (keyboard)
+//   Arrow Keys    pan camera
+//   Z             zoom camera in
+//   X             zoom camera out
+//   Space         play sound effect
+//   Escape        close window
+//   Left Stick    move sprite (controller)
+//   A Button      play sound effect (controller)
+//   Right Trigger rumble
 // =============================================================================

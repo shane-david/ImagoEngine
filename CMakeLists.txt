@@ -28,3 +28,4 @@ find_package(Stb REQUIRED)
 
 # Subdirectories
 add_subdirectory(test)
+add_subdirectory(engine)

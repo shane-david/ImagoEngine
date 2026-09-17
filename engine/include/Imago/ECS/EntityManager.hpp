@@ -82,5 +82,4 @@ namespace Imago::ECS
         uint32_t GetAliveCount() const { return static_cast<uint32_t>(_generations.size() - _freeIndices.size()); }; 
 
     }; 
-
 }

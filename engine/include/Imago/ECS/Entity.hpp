@@ -1,5 +1,6 @@
 /**
  * @file Entity.hpp
+ * @author Shane David
  * @brief Defines the Entity alias and the free functions used to pack and unpack it
  * 
  * An Entity is a lightweight identifier, a single packed uint32_t containing both an

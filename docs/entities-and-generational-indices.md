@@ -1,10 +1,10 @@
 # Entities and Generational Indices
 
 Author: Shane David
+Type: Documentation
+Upload Date: September 15, 2026
 
-# Entities
-
-### What is an Entity?
+### Entities
 
 An `Entity` in ImagoEngine is not an object, it is just a number. Specifically it is an alias for a `uint32_t` that packs two pieces of information together:
 
@@ -13,7 +13,7 @@ An `Entity` in ImagoEngine is not an object, it is just a number. Specifically i
 
 Entities carry no data of their own. They are keys you use to look up components stored elsewhere. Entities existing like this is the foundation of ImagoEngine’s ECS design: an Entity is just an id, nothing more. 
 
-### Why generations?
+### Generations
 
 For optimization and memory purposes Entity indices are reused. However this can cause issues: since Entities are just numbers there is no way to distinguish between a fresh Entity and a reused Entity. For example, consider an Entity that exists at index 5. This entity was handed to three different systems and then eventually destroyed. Later, that index is reused and a new, completely unrelated Entity exists at index 5. Now those three systems are silently pointing at an unrelated Entity now that index 5 is valid again. 
 

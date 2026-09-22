@@ -9,8 +9,10 @@
 #include <cstdint> // for uint32_t 
 #include <unordered_map> // for component pools
 #include <memory> // for std::unique_ptr
+#include <utility> // for std::move
 
 #include "Imago/ECS/Entity.hpp"
+#include "Imago/ECS/EntityManager.hpp"
 #include "Imago/ECS/SparseSet.hpp"
 #include "Imago/ECS/SparseSetBase.hpp"
 
@@ -69,6 +71,7 @@ namespace Imago::ECS
     class Nexus {
     private:
         
+        EntityManager _entityManager; ///> Nexus owns entity lifetime and is the only intended caller of the EntityManager
         std::unordered_map<ComponentTypeId, std::unique_ptr<SparseSetBase>> _pools; ///> unorder map of component pools, one SparseSetBase per component type, keyed with ids
         
         /**
@@ -99,6 +102,26 @@ namespace Imago::ECS
         // explicitly disallow copy behavior
         Nexus(const Nexus&) = delete; 
         Nexus& operator=(const Nexus&) = delete; 
+
+        /**
+         * @brief Creates a new Entity
+         * @return The Entity packed uint32_t that was just created
+         */
+        Entity Create(); 
+
+        /**
+         * @brief Destroys an Entity and removes it from every component pool it is in.
+         * @param e The Entity to destroy
+         */
+        void Destroy(Entity e); 
+
+        /**
+         * @brief Checks whether an Entity is still valid
+         * @param e The Entity to check
+         * @return true if the Entity is valid
+         * @return false if the Entity is not valid
+         */
+        bool IsValid(Entity e) const; 
 
         /**
          * @brief Binds a component of type T to Entity e
@@ -178,7 +201,6 @@ namespace Imago::ECS
     template <typename T>
     SparseSet<T>* Nexus::GetPool() 
     {
-
         // get the id at that component type
         uint32_t id = GetComponentTypeId<T>(); 
 
@@ -197,7 +219,6 @@ namespace Imago::ECS
     template <typename T>
     SparseSet<T>* Nexus::FindPool() 
     {
-
         // get the id at that component type
         uint32_t id = GetComponentTypeId<T>(); 
 
@@ -213,5 +234,69 @@ namespace Imago::ECS
         return static_cast<SparseSet<T>*>(location->second.get()); 
     }
 
+    //TODO: set up error messaging so it reports it through Nexus to avoid user confusion 
+    template <typename T>
+    T& Nexus::Bind(Entity e, T component) 
+    { 
+        // get the pool for that component type
+        SparseSet<T>* pool = GetPool<T>(); 
 
+        // add the component to that pool and return it
+        return pool->Insert(e, std::move(component)); 
+    }
+
+    template <typename T>
+    void Nexus::Unbind(Entity e) 
+    {  
+        // get the pool for that component type
+        SparseSet<T>* pool = FindPool<T>();
+        if (pool == nullptr) return; 
+
+        // remove the component from that pool
+        pool->Remove(e); 
+    }
+
+    //TODO: set up error messaging so it reports it through Nexus to avoid user confusion 
+    template <typename T>
+    T& Nexus::Patch(Entity e, T component) 
+    {
+        // get the pool for that component type
+        SparseSet<T>* pool = GetPool<T>();
+
+        // replace that component and return it 
+        return pool->Replace(e, std::move(component)); 
+    }
+
+    template <typename T>
+    T& Nexus::Get(Entity e) 
+    {
+        // get the pool for that component type
+        SparseSet<T>* pool = FindPool<T>();
+        assert(pool != nullptr && "[Nexus] Get called for a component type with no registered pool."); 
+
+        // return the component
+        return pool->Get(e); 
+    }
+
+    template <typename T>
+    T* Nexus::TryToGet(Entity e) 
+    {
+        // get the pool for that component type
+        SparseSet<T>* pool = FindPool<T>();
+        if (pool == nullptr) return nullptr; 
+
+        // return the component or nullptr
+        return pool->TryToGet(e); 
+    }
+
+    template <typename T>
+    bool Nexus::Has(Entity e) 
+    {
+        // get the pool for that component type
+        SparseSet<T>* pool = FindPool<T>();
+        if (pool == nullptr) return false; 
+
+        // return if it has the component
+        return pool->Has(e); 
+    }
 }

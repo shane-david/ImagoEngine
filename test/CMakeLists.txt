@@ -1,7 +1,6 @@
 # ecs tests
 add_executable(ecs_tests
-  ECS/EntityManagerTests.cpp
-  ECS/SparseSetTests.cpp
+  ECS/NexusTests.cpp
 )
 
 target_link_libraries(ecs_tests PRIVATE

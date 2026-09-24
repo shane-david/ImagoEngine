@@ -50,7 +50,7 @@ namespace Imago::ECS
          * @param component the component to insert
          * @return a reference to the component
          */
-        T& Insert(Entity e, T component); 
+        T& insert(Entity e, T component); 
 
         /**
          * @brief replaces a component with new data 
@@ -58,7 +58,7 @@ namespace Imago::ECS
          * @param component the component to replace it with
          * @return a reference to the component 
          */
-        T& Replace(Entity e, T component); 
+        T& replace(Entity e, T component); 
 
         
          // NOTE: a const and a non const getter is an important C++ mechanism called overlaoding on const
@@ -70,21 +70,21 @@ namespace Imago::ECS
          * @param e the Entity whose component you want
          * @return the referance to the Entity's component  
          */
-        T& Get(Entity e);
-        const T& Get(Entity e) const; 
+        T& get(Entity e);
+        const T& get(Entity e) const; 
 
         /**
          * @brief tries to get a component and returns nullptr if one does not exist
          * @param e the entity to try to get
          * @return component pointer or nullptr if no component exists 
          */
-        T* TryToGet(Entity e); 
+        T* try_to_get(Entity e); 
 
         // SpareSetBase overrides
-        void Remove(Entity e) override;
-        bool Has(Entity e) const override;
-        size_t GetSize() const override; 
-        const std::vector<Entity>& GetEntities() const override; 
+        void remove(Entity e) override;
+        bool has(Entity e) const override;
+        size_t get_size() const override; 
+        const std::vector<Entity>& get_entities() const override; 
     }; 
 
     //------------
@@ -92,11 +92,11 @@ namespace Imago::ECS
     //------------
 
     template <typename T>
-    T& SparseSet<T>::Insert(Entity e, T component) 
+    T& SparseSet<T>::insert(Entity e, T component) 
     {
 
         // extract the Entity's index
-        uint32_t index = GetEntityIndex(e); 
+        uint32_t index = get_entity_index(e); 
 
         // ensure that the Entity's size is under the maximum entities
         assert(index < ENTITY_INDEX_MASK && "[SparseSet] Insert call with an out-of-range Entity index"); 
@@ -125,10 +125,10 @@ namespace Imago::ECS
     }
 
     template <typename T>
-    T& SparseSet<T>::Replace(Entity e, T component) 
+    T& SparseSet<T>::replace(Entity e, T component) 
     {
         // extract the Entity's index 
-        uint32_t index = GetEntityIndex(e); 
+        uint32_t index = get_entity_index(e); 
 
         // ensure the entity has a component to replace
         assert(index < _sparse.size() && _sparse[index] != INVALID_INDEX && "[SparseSet] Replace called on an Entity with no existing component");
@@ -144,10 +144,10 @@ namespace Imago::ECS
     }
 
     template <typename T>
-    T& SparseSet<T>::Get(Entity e) {
+    T& SparseSet<T>::get(Entity e) {
 
         // extract the index 
-        uint32_t index = GetEntityIndex(e); 
+        uint32_t index = get_entity_index(e); 
 
         // ensure the index is in bounds
         assert(index < _sparse.size() && _sparse[index] != INVALID_INDEX && "[SparseSet] Get called on an Entity with no component in this pool"); 
@@ -157,10 +157,10 @@ namespace Imago::ECS
     }
 
     template <typename T>
-    const T& SparseSet<T>::Get(Entity e) const {
+    const T& SparseSet<T>::get(Entity e) const {
 
         // extract the index 
-        uint32_t index = GetEntityIndex(e); 
+        uint32_t index = get_entity_index(e); 
 
         // ensure the index is in bounds
         assert(index < _sparse.size() && _sparse[index] != INVALID_INDEX && "[SparseSet] Get called on an Entity with no component in this pool"); 
@@ -170,10 +170,10 @@ namespace Imago::ECS
     }
 
     template <typename T>
-    T* SparseSet<T>::TryToGet(Entity e) {
+    T* SparseSet<T>::try_to_get(Entity e) {
 
         // extract the index
-        uint32_t index = GetEntityIndex(e);
+        uint32_t index = get_entity_index(e);
 
         // return nullptr if the index is not in bounds or does not exist
         if (index >= _sparse.size() || _sparse[index] == INVALID_INDEX) {
@@ -186,10 +186,10 @@ namespace Imago::ECS
     
 
     template <typename T>
-    void SparseSet<T>::Remove(Entity e) {
+    void SparseSet<T>::remove(Entity e) {
 
         // unpack the Entity index
-        uint32_t index = GetEntityIndex(e); 
+        uint32_t index = get_entity_index(e); 
 
         // ensure that the entity actually does have a component in the sparse set
         if (index >= _sparse.size() || _sparse[index] == INVALID_INDEX) {
@@ -211,7 +211,7 @@ namespace Imago::ECS
             _entities[removedIndex] = _entities[lastIndex]; 
 
             // get the index of the entity we just swapped
-            uint32_t swappedIndex = GetEntityIndex(_entities[removedIndex]); 
+            uint32_t swappedIndex = get_entity_index(_entities[removedIndex]); 
 
             // update _sparse to now contain the new index for the entity we just swapped
             _sparse[swappedIndex] = removedIndex; 
@@ -226,20 +226,20 @@ namespace Imago::ECS
     }
 
     template <typename T>
-    bool SparseSet<T>::Has(Entity e) const {
+    bool SparseSet<T>::has(Entity e) const {
 
         // extract index and return if it is in the sparse array
-        uint32_t index = GetEntityIndex(e);
+        uint32_t index = get_entity_index(e);
         return index < _sparse.size() && _sparse[index] != INVALID_INDEX; 
     }
 
     template <typename T>
-    size_t SparseSet<T>::GetSize() const {
+    size_t SparseSet<T>::get_size() const {
         return _dense.size(); 
     }
 
     template <typename T>
-    const std::vector<Entity>& SparseSet<T>::GetEntities() const {
+    const std::vector<Entity>& SparseSet<T>::get_entities() const {
         return _entities; 
     }
 }

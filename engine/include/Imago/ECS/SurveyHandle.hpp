@@ -21,12 +21,15 @@ namespace Imago::ECS
     // Note: Survey<Components...> can take any number of component types. This is using a C++ variadic template parameter pack
 
     /**
-     * @brief 
+     * @brief The Survey takes Componets as templated arguments and acts as an iterator over all entities with all component types
      * 
-     * @tparam Components 
+     * Survey defines an Iterator inner class so that iterating with for loops is safe. As it iterates it skips over any
+     * index that represents an Entity that is not in every single component pool. 
+     * 
+     * @tparam Components to survey 
      */
     template <typename... Components>
-    class Survey {
+    class SurveyHandle {
     private:
         
         // Note: we are using an array here instead of a vector because the count of components and hence the size of the _pools array will be known at compile time
@@ -47,7 +50,7 @@ namespace Imago::ECS
          * 
          * @param pools the array of SparseSetBase* that makes up the pools for the particular Survey. 
          */
-        explicit Survey(const std::array<SparseSetBase*, sizeof...(Components)>& pools) 
+        explicit SurveyHandle(const std::array<SparseSetBase*, sizeof...(Components)>& pools) 
             : _pools(pools)
         {   
             // ensure an empty array was not passed in 
@@ -56,7 +59,7 @@ namespace Imago::ECS
             // find and set the smallest pool with a linear scan 
             _smallestPool = _pools[0]; 
             for (SparseSetBase* pool : _pools) {
-                if (pool->GetSize() < _smallestPool->GetSize()) {
+                if (pool->get_size() < _smallestPool->get_size()) {
                     _smallestPool = pool; 
                 }
             }
@@ -66,8 +69,9 @@ namespace Imago::ECS
         // we need to define an Iterator inner class with the necessary methods
 
         /**
-         * @brief 
-         * 
+         * @internal
+         * @brief Iterator inner class the defines operators for progressing through the Survey 
+         * and the necessary overloads for functionality with for loops
          */
         class Iterator {
         private:
@@ -77,10 +81,10 @@ namespace Imago::ECS
             /**
              * @brief Advances _index past any entity that is not in every requested pool.
              */
-            void SkipUnmatched() 
+            void skip_unmatched() 
             {
                 // increment index while we are not at the end of the pools and every Entity is in each component pool
-                while (_index < _entities->size() && !MatchesAll((*_entities)[_index])) {
+                while (_index < _entities->size() && !matches_all((*_entities)[_index])) {
                     _index++; 
                 }
             }
@@ -91,13 +95,13 @@ namespace Imago::ECS
              * @return true if the Entity is in every requested pool.
              * @return false if the Entity is not in every requested pool. 
              */
-            bool MatchesAll(Entity e) const 
+            bool matches_all(Entity e) const 
             {
                 // iterate through every pool for the survey
                 for (SparseSetBase* pool : *_pools) {
 
                     // if any entity does not have the pool return false
-                    if (!pool->Has(e)) {
+                    if (!pool->has(e)) {
                         return false; 
                     }
                 }
@@ -108,32 +112,52 @@ namespace Imago::ECS
 
 
             // data 
-            const std::vector<Entity>* _entities; ///< vector of Entities that have all components in the Survey 
+            const std::vector<Entity>* _entities; ///< vector of Entities of the smallest pool
             size_t _index; ///< current index 
             const std::array<SparseSetBase*, sizeof...(Components)>* _pools; ///< pointer to the Survey's pools
 
         public:
 
+            /**
+             * @brief Construct a new Iterator object
+             * @param entities the smallest pool of entitites in the Survey
+             * @param index where this specific Iterator points to at construction 
+             * @param pools the pools in the Survey 
+             */
             Iterator(const std::vector<Entity>* entities, size_t index, const std::array<SparseSetBase*, sizeof...(Components)>* pools)
                 : _entities(entities), _index(index), _pools(pools)
             {
-                SkipUnmatched(); 
+                skip_unmatched(); 
             }
 
-            // opeartor overloads for for loops
+            // operator overloads for for loops
 
+            /**
+             * @brief Dereference the iterator to access the current element.
+             * @return The Entity that is at the current index 
+             */
             Entity operator*() const 
             {
                 return (*_entities)[_index]; // dereferences should return the entity at the current index 
             }
 
+            /**
+             * @brief Advances the Iterator to the next element, skipping indices that represent Entities not in every pool.  
+             * @return Reference to the Iterator after going to the next element. 
+             */
             Iterator& operator++() 
             {
                 _index++; // increment the index
-                SkipUnmatched(); // skip to the next valid index
+                skip_unmatched(); // skip to the next valid index
                 return *this; // return the iterator 
             }
 
+            /**
+             * @brief Checks whether two iterators point to different positions 
+             * @param other Iterator to compare against. 
+             * @return true if the Iterators refer to different positions. 
+             * @return false if the Iterators refer to the same position. 
+             */
             bool operator!=(const Iterator& other) const 
             {
                 return _index != other._index; // comparisons should compare indices 
@@ -142,14 +166,25 @@ namespace Imago::ECS
         }; 
 
         // begin and end methods for for loop usage with Iterator, they just return two iterators at where the start should be and where the end should be 
+
+        /**
+         * @brief Returns an Iterator to the first element. 
+         * 
+         * @return Iterator pointing to the first element
+         */
         Iterator begin() const 
         {
-            return Iterator(&_smallestPool->GetEntities(), 0, &_pools); 
-        }
+            return Iterator(&_smallestPool->get_entities(), 0, &_pools); 
+        }   
 
+        /**
+         * @brief Returns an Iterator past the last element
+         * 
+         * @return Iterator representing the end of the collection
+         */
         Iterator end() const 
         {
-            return Iterator(&_smallestPool->GetEntities(), _smallestPool->GetSize(), &_pools); 
+            return Iterator(&_smallestPool->get_entities(), _smallestPool->get_size(), &_pools); 
         }
     }; 
 }

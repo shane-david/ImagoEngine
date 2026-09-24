@@ -49,7 +49,7 @@ namespace Imago::ECS
          * @complexity O(1)
          * @warning Not thread-safe.
          */
-        Entity Create();
+        Entity create();
 
         /**
          * @brief Destroys an Entity, freeing its index for future reuse.
@@ -61,7 +61,7 @@ namespace Imago::ECS
          * @note Destroying an already-invalid Entity is a safe no-op, not an error.
          * @complexity O(1)
          */
-        void Destroy(Entity); 
+        void destroy(Entity); 
 
         /**
          * @brief Checks whether an Entity handle is still valid.
@@ -73,13 +73,13 @@ namespace Imago::ECS
          * @return true if the entity is currently alive.
          * @complexity O(1)
          */
-        bool IsValid(Entity) const; 
+        bool is_valid(Entity) const; 
 
         /**
          * @brief Returns the number of currently-alive entities.
          * @complexity O(1)
          */
-        uint32_t GetAliveCount() const { return static_cast<uint32_t>(_generations.size() - _freeIndices.size()); }; 
+        uint32_t get_alive_count() const { return static_cast<uint32_t>(_generations.size() - _freeIndices.size()); }; 
 
     }; 
 }

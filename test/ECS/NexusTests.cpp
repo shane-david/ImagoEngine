@@ -21,103 +21,103 @@ namespace
   };
 }
 
-TEST_CASE("Create returns a valid Entity", "[nexus]")
+TEST_CASE("create returns a valid Entity", "[nexus]")
 {
   Nexus nexus;
-  Entity e = nexus.Create();
+  Entity e = nexus.create();
 
-  REQUIRE(nexus.IsValid(e));
+  REQUIRE(nexus.is_valid(e));
 }
 
-TEST_CASE("Bind attaches a component and it can be retrieved", "[nexus]")
+TEST_CASE("bind attaches a component and it can be retrieved", "[nexus]")
 {
   Nexus nexus;
-  Entity e = nexus.Create();
+  Entity e = nexus.create();
 
-  nexus.Bind<Position>(e, Position{ 1, 2 });
+  nexus.bind<Position>(e, Position{ 1, 2 });
 
-  REQUIRE(nexus.Has<Position>(e));
-  REQUIRE(nexus.Get<Position>(e).x == 1);
-  REQUIRE(nexus.Get<Position>(e).y == 2);
+  REQUIRE(nexus.has<Position>(e));
+  REQUIRE(nexus.get<Position>(e).x == 1);
+  REQUIRE(nexus.get<Position>(e).y == 2);
 }
 
-TEST_CASE("Bind on an already-bound entity returns the existing component", "[nexus]")
+TEST_CASE("bind on an already-bound entity returns the existing component", "[nexus]")
 {
   Nexus nexus;
-  Entity e = nexus.Create();
+  Entity e = nexus.create();
 
-  nexus.Bind<Position>(e, Position{ 1, 1 });
-  Position& existing = nexus.Bind<Position>(e, Position{ 99, 99 }); // should warn, not overwrite
+  nexus.bind<Position>(e, Position{ 1, 1 });
+  Position& existing = nexus.bind<Position>(e, Position{ 99, 99 }); // should warn, not overwrite
 
   REQUIRE(existing.x == 1);
-  REQUIRE(nexus.Get<Position>(e).x == 1);
+  REQUIRE(nexus.get<Position>(e).x == 1);
 }
 
-TEST_CASE("Patch overwrites an existing component", "[nexus]")
+TEST_CASE("patch overwrites an existing component", "[nexus]")
 {
   Nexus nexus;
-  Entity e = nexus.Create();
+  Entity e = nexus.create();
 
-  nexus.Bind<Position>(e, Position{ 1, 1 });
-  nexus.Patch<Position>(e, Position{ 5, 5 });
+  nexus.bind<Position>(e, Position{ 1, 1 });
+  nexus.patch<Position>(e, Position{ 5, 5 });
 
-  REQUIRE(nexus.Get<Position>(e).x == 5);
-  REQUIRE(nexus.Get<Position>(e).y == 5);
+  REQUIRE(nexus.get<Position>(e).x == 5);
+  REQUIRE(nexus.get<Position>(e).y == 5);
 }
 
-TEST_CASE("Unbind removes a component from an entity", "[nexus]")
+TEST_CASE("unbind removes a component from an entity", "[nexus]")
 {
   Nexus nexus;
-  Entity e = nexus.Create();
-  nexus.Bind<Position>(e, Position{ 1, 1 });
+  Entity e = nexus.create();
+  nexus.bind<Position>(e, Position{ 1, 1 });
 
-  nexus.Unbind<Position>(e);
+  nexus.unbind<Position>(e);
 
-  REQUIRE_FALSE(nexus.Has<Position>(e));
+  REQUIRE_FALSE(nexus.has<Position>(e));
 }
 
-TEST_CASE("Unbind on a component type with no pool yet is a safe no-op", "[nexus]")
+TEST_CASE("unbind on a component type with no pool yet is a safe no-op", "[nexus]")
 {
   Nexus nexus;
-  Entity e = nexus.Create();
+  Entity e = nexus.create();
 
-  REQUIRE_NOTHROW(nexus.Unbind<Position>(e)); // Position pool never created
+  REQUIRE_NOTHROW(nexus.unbind<Position>(e)); // Position pool never created
 }
 
-TEST_CASE("Has returns false for a component type never bound to anything", "[nexus]")
+TEST_CASE("has returns false for a component type never bound to anything", "[nexus]")
 {
   Nexus nexus;
-  Entity e = nexus.Create();
+  Entity e = nexus.create();
 
-  REQUIRE_FALSE(nexus.Has<Position>(e)); // no pool for Position exists at all yet
+  REQUIRE_FALSE(nexus.has<Position>(e)); // no pool for Position exists at all yet
 }
 
-TEST_CASE("TryGet returns nullptr when no pool exists for the component type", "[nexus]")
+TEST_CASE("try_to_get returns nullptr when no pool exists for the component type", "[nexus]")
 {
   Nexus nexus;
-  Entity e = nexus.Create();
+  Entity e = nexus.create();
 
-  REQUIRE(nexus.TryToGet<Position>(e) == nullptr);
+  REQUIRE(nexus.try_to_get<Position>(e) == nullptr);
 }
 
-TEST_CASE("TryGet returns nullptr when a pool exists but this entity has no component", "[nexus]")
+TEST_CASE("try_to_get returns nullptr when a pool exists but this entity has no component", "[nexus]")
 {
   Nexus nexus;
-  Entity a = nexus.Create();
-  Entity b = nexus.Create();
+  Entity a = nexus.create();
+  Entity b = nexus.create();
 
-  nexus.Bind<Position>(a, Position{ 1, 1 }); // creates the Position pool
+  nexus.bind<Position>(a, Position{ 1, 1 }); // creates the Position pool
 
-  REQUIRE(nexus.TryToGet<Position>(b) == nullptr);
+  REQUIRE(nexus.try_to_get<Position>(b) == nullptr);
 }
 
-TEST_CASE("TryGet returns a valid pointer when the component exists", "[nexus]")
+TEST_CASE("try_to_get returns a valid pointer when the component exists", "[nexus]")
 {
   Nexus nexus;
-  Entity e = nexus.Create();
-  nexus.Bind<Position>(e, Position{ 3, 4 });
+  Entity e = nexus.create();
+  nexus.bind<Position>(e, Position{ 3, 4 });
 
-  Position* p = nexus.TryToGet<Position>(e);
+  Position* p = nexus.try_to_get<Position>(e);
 
   REQUIRE(p != nullptr);
   REQUIRE(p->x == 3);
@@ -126,43 +126,43 @@ TEST_CASE("TryGet returns a valid pointer when the component exists", "[nexus]")
 TEST_CASE("An entity can hold multiple different component types at once", "[nexus]")
 {
   Nexus nexus;
-  Entity e = nexus.Create();
+  Entity e = nexus.create();
 
-  nexus.Bind<Position>(e, Position{ 1, 1 });
-  nexus.Bind<Velocity>(e, Velocity{ 2, 2 });
+  nexus.bind<Position>(e, Position{ 1, 1 });
+  nexus.bind<Velocity>(e, Velocity{ 2, 2 });
 
-  REQUIRE(nexus.Has<Position>(e));
-  REQUIRE(nexus.Has<Velocity>(e));
-  REQUIRE(nexus.Get<Velocity>(e).dx == 2);
+  REQUIRE(nexus.has<Position>(e));
+  REQUIRE(nexus.has<Velocity>(e));
+  REQUIRE(nexus.get<Velocity>(e).dx == 2);
 }
 
-TEST_CASE("Destroy removes the entity from every pool it was in", "[nexus]")
+TEST_CASE("destroy removes the entity from every pool it was in", "[nexus]")
 {
   Nexus nexus;
-  Entity e = nexus.Create();
+  Entity e = nexus.create();
 
-  nexus.Bind<Position>(e, Position{ 1, 1 });
-  nexus.Bind<Velocity>(e, Velocity{ 2, 2 });
+  nexus.bind<Position>(e, Position{ 1, 1 });
+  nexus.bind<Velocity>(e, Velocity{ 2, 2 });
 
-  nexus.Destroy(e);
+  nexus.destroy(e);
 
-  REQUIRE_FALSE(nexus.IsValid(e));
-  REQUIRE_FALSE(nexus.Has<Position>(e));
-  REQUIRE_FALSE(nexus.Has<Velocity>(e));
+  REQUIRE_FALSE(nexus.is_valid(e));
+  REQUIRE_FALSE(nexus.has<Position>(e));
+  REQUIRE_FALSE(nexus.has<Velocity>(e));
 }
 
 TEST_CASE("Destroying one entity does not affect another entity's components", "[nexus]")
 {
   Nexus nexus;
-  Entity a = nexus.Create();
-  Entity b = nexus.Create();
+  Entity a = nexus.create();
+  Entity b = nexus.create();
 
-  nexus.Bind<Position>(a, Position{ 1, 1 });
-  nexus.Bind<Position>(b, Position{ 9, 9 });
+  nexus.bind<Position>(a, Position{ 1, 1 });
+  nexus.bind<Position>(b, Position{ 9, 9 });
 
-  nexus.Destroy(a);
+  nexus.destroy(a);
 
-  REQUIRE_FALSE(nexus.Has<Position>(a));
-  REQUIRE(nexus.Has<Position>(b));
-  REQUIRE(nexus.Get<Position>(b).x == 9);
+  REQUIRE_FALSE(nexus.has<Position>(a));
+  REQUIRE(nexus.has<Position>(b));
+  REQUIRE(nexus.get<Position>(b).x == 9);
 }

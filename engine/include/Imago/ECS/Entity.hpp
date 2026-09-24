@@ -11,7 +11,7 @@
 # pragma once 
 
 #include <cstdint> // for uint32_t 
-#include <cassert> // for error notification in MakeEntity
+#include <cassert> // for error notification in make_entity
 
 namespace Imago::ECS 
 {
@@ -49,7 +49,7 @@ namespace Imago::ECS
      * @param entity The packed Entity to decode.
      * @return The entity's index.
      */
-    constexpr uint32_t GetEntityIndex(Entity entity) 
+    constexpr uint32_t get_entity_index(Entity entity) 
     {
         return entity & ENTITY_INDEX_MASK; 
     }
@@ -60,7 +60,7 @@ namespace Imago::ECS
      * @param entity The packed Entity to decode.
      * @return The entity's generation.
      */
-    constexpr uint32_t GetEntityGeneration(Entity entity) 
+    constexpr uint32_t get_entity_generation(Entity entity) 
     {
         return (entity >> ENTITY_INDEX_BITS) & ENTITY_GENERATION_MASK; 
     }
@@ -74,7 +74,7 @@ namespace Imago::ECS
      * @return The packed Entity.
      * @note Debug builds assert on out-of-range input; release builds silently mask it.
      */
-    constexpr Entity MakeEntity(uint32_t index, uint32_t generation) 
+    constexpr Entity make_entity(uint32_t index, uint32_t generation) 
     {
         // ensure that the Entity index and generation do not exceed their respective bit ranges
         assert(index <= ENTITY_INDEX_MASK && "[ENTITY] Entity index exceeds 20-bit range");

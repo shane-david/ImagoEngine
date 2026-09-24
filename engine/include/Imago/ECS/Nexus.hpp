@@ -8,6 +8,7 @@
 
 #include <cstdint> // for uint32_t 
 #include <unordered_map> // for component pools
+#include <array> // to construct surveys 
 #include <memory> // for std::unique_ptr
 #include <utility> // for std::move
 
@@ -15,6 +16,7 @@
 #include "Imago/ECS/EntityManager.hpp"
 #include "Imago/ECS/SparseSet.hpp"
 #include "Imago/ECS/SparseSetBase.hpp"
+#include "Imago/ECS/SurveyHandle.hpp"
 
 namespace Imago::ECS 
 {
@@ -41,7 +43,7 @@ namespace Imago::ECS
          * 
          * @return the next id
          */
-        inline ComponentTypeId NextComponentTypeId() 
+        inline ComponentTypeId next_component_type_id() 
         {
             static ComponentTypeId id = 0; // allocated only once for the first function call
             return id++; 
@@ -58,15 +60,20 @@ namespace Imago::ECS
      * @return The id for that component type.
      */
     template <typename T>
-    ComponentTypeId GetComponentTypeId() 
+    ComponentTypeId get_component_type_id() 
     {
-        static ComponentTypeId id = detail::NextComponentTypeId(); // assigned only once for the first function call
+        static ComponentTypeId id = detail::next_component_type_id(); // assigned only once for the first function call
         return id; 
     }
 
     /**
-     * @brief 
+     * @brief the Nexus is the brain of the ECS world. It is where the user will 
+     * interact with everything ECS related in systems. 
      * 
+     * It handles:
+     * - creating/destorying entities
+     * - binding/unbinding components
+     * - returning and creating bonds and surveys 
      */
     class Nexus {
     private:
@@ -83,7 +90,7 @@ namespace Imago::ECS
          * @return Pointer to the component pool. 
          */
         template <typename T>
-        SparseSet<T>* GetPool();
+        SparseSet<T>* get_pool();
 
         /**
          * @brief Tries to return the pool of component type T.
@@ -92,7 +99,7 @@ namespace Imago::ECS
          * @return nullptr if the component pool does not exist. 
          */
         template <typename T>
-        SparseSet<T>* FindPool(); 
+        SparseSet<T>* find_pool(); 
 
     public:
         
@@ -103,17 +110,21 @@ namespace Imago::ECS
         Nexus(const Nexus&) = delete; 
         Nexus& operator=(const Nexus&) = delete; 
 
+        //-------------------------
+        //Entity/Component Methods
+        //-------------------------
+
         /**
          * @brief Creates a new Entity
          * @return The Entity packed uint32_t that was just created
          */
-        Entity Create(); 
+        Entity create(); 
 
         /**
          * @brief Destroys an Entity and removes it from every component pool it is in.
          * @param e The Entity to destroy
          */
-        void Destroy(Entity e); 
+        void destroy(Entity e); 
 
         /**
          * @brief Checks whether an Entity is still valid
@@ -121,7 +132,7 @@ namespace Imago::ECS
          * @return true if the Entity is valid
          * @return false if the Entity is not valid
          */
-        bool IsValid(Entity e) const; 
+        bool is_valid(Entity e) const; 
 
         /**
          * @brief Binds a component of type T to Entity e
@@ -136,7 +147,7 @@ namespace Imago::ECS
          * @return A reference to the component 
          */
         template <typename T>
-        T& Bind(Entity e, T component); 
+        T& bind(Entity e, T component); 
 
         /**
          * @brief Unbinds a component of type T from Entity e if possible. 
@@ -144,7 +155,7 @@ namespace Imago::ECS
          * @param e The entity to unbind the component from. 
          */
         template <typename T>
-        void Unbind(Entity e); 
+        void unbind(Entity e); 
 
         /**
          * @brief Overwrites an Entity's existing component of type T with new component data, 
@@ -157,21 +168,21 @@ namespace Imago::ECS
          * @return A reference to the updated component. 
          */
         template <typename T>
-        T& Patch(Entity e, T component); 
+        T& patch(Entity e, T component); 
 
         /**
          * @brief Returns a reference to the Entity's component of type T. 
          *  
          * Get<T>(e) assumes e has that component type and should be used only 
          * in Surveys/Bonds where the entity is already guaranteed to have that component.
-         * See, TryToGet<T>(e) for a safer version.
+         * See, try_to_get<T>(e) for a safer version.
          * 
          * @tparam T The component type to return.
          * @param e The entity whose component to return.
          * @return Reference to the Entity's component. 
          */
         template <typename T>
-        T& Get(Entity e); 
+        T& get(Entity e); 
 
         /**
          * @brief Returns a reference to the Entity's component of type T if it has it and nullptr otherwise. 
@@ -181,7 +192,7 @@ namespace Imago::ECS
          * @return nullptr if the Entity does not have the component.
          */
         template <typename T>
-        T* TryToGet(Entity e); 
+        T* try_to_get(Entity e); 
 
         /**
          * @brief Check whether an Entity currently has a component of type T.
@@ -191,7 +202,21 @@ namespace Imago::ECS
          * @return false if the Entity does not have the component. 
          */
         template <typename T>
-        bool Has(Entity e); 
+        bool has(Entity e); 
+
+        //-------------------
+        //Survey/Bond methods
+        //-------------------
+
+        /**
+         * @brief Returns a survey of the specified components
+         * 
+         * @tparam Components to survey
+         * @return The SurveyHandle of the queried components 
+         */
+        template <typename... Components>
+        SurveyHandle<Components...> survey(); 
+
     }; 
 
     //-----------
@@ -199,10 +224,10 @@ namespace Imago::ECS
     //-----------
 
     template <typename T>
-    SparseSet<T>* Nexus::GetPool() 
+    SparseSet<T>* Nexus::get_pool() 
     {
         // get the id at that component type
-        uint32_t id = GetComponentTypeId<T>(); 
+        uint32_t id = get_component_type_id<T>(); 
 
         // try to find the id in _pools
         auto location = _pools.find(id); 
@@ -217,10 +242,10 @@ namespace Imago::ECS
     }
 
     template <typename T>
-    SparseSet<T>* Nexus::FindPool() 
+    SparseSet<T>* Nexus::find_pool() 
     {
         // get the id at that component type
-        uint32_t id = GetComponentTypeId<T>(); 
+        uint32_t id = get_component_type_id<T>(); 
 
         // try to find it the id in _pools
         auto location = _pools.find(id);
@@ -236,67 +261,78 @@ namespace Imago::ECS
 
     //TODO: set up error messaging so it reports it through Nexus to avoid user confusion 
     template <typename T>
-    T& Nexus::Bind(Entity e, T component) 
+    T& Nexus::bind(Entity e, T component) 
     { 
         // get the pool for that component type
-        SparseSet<T>* pool = GetPool<T>(); 
+        SparseSet<T>* pool = get_pool<T>(); 
 
         // add the component to that pool and return it
-        return pool->Insert(e, std::move(component)); 
+        return pool->insert(e, std::move(component)); 
     }
 
     template <typename T>
-    void Nexus::Unbind(Entity e) 
+    void Nexus::unbind(Entity e) 
     {  
         // get the pool for that component type
-        SparseSet<T>* pool = FindPool<T>();
+        SparseSet<T>* pool = find_pool<T>();
         if (pool == nullptr) return; 
 
         // remove the component from that pool
-        pool->Remove(e); 
+        pool->remove(e); 
     }
 
     //TODO: set up error messaging so it reports it through Nexus to avoid user confusion 
     template <typename T>
-    T& Nexus::Patch(Entity e, T component) 
+    T& Nexus::patch(Entity e, T component) 
     {
         // get the pool for that component type
-        SparseSet<T>* pool = GetPool<T>();
+        SparseSet<T>* pool = get_pool<T>();
 
         // replace that component and return it 
-        return pool->Replace(e, std::move(component)); 
+        return pool->replace(e, std::move(component)); 
     }
 
     template <typename T>
-    T& Nexus::Get(Entity e) 
+    T& Nexus::get(Entity e) 
     {
         // get the pool for that component type
-        SparseSet<T>* pool = FindPool<T>();
+        SparseSet<T>* pool = find_pool<T>();
         assert(pool != nullptr && "[Nexus] Get called for a component type with no registered pool."); 
 
         // return the component
-        return pool->Get(e); 
+        return pool->get(e); 
     }
 
     template <typename T>
-    T* Nexus::TryToGet(Entity e) 
+    T* Nexus::try_to_get(Entity e) 
     {
         // get the pool for that component type
-        SparseSet<T>* pool = FindPool<T>();
+        SparseSet<T>* pool = find_pool<T>();
         if (pool == nullptr) return nullptr; 
 
         // return the component or nullptr
-        return pool->TryToGet(e); 
+        return pool->try_to_get(e); 
     }
 
     template <typename T>
-    bool Nexus::Has(Entity e) 
+    bool Nexus::has(Entity e) 
     {
         // get the pool for that component type
-        SparseSet<T>* pool = FindPool<T>();
+        SparseSet<T>* pool = find_pool<T>();
         if (pool == nullptr) return false; 
 
         // return if it has the component
-        return pool->Has(e); 
+        return pool->has(e); 
+    }
+
+    template <typename... Components>
+    SurveyHandle<Components...> Nexus::survey() 
+    {   
+        // create an array of SparseSet pointers per type packed into Components arguments
+        //TODO: the solution to use get_pool instead of find_pool is to avoid passing a nullptr into Survey's constructor, consider this solution vs doing a null check in the constructor 
+        std::array<SparseSetBase*, sizeof...(Components)> pools = { get_pool<Components>()... }; 
+        
+        // construct and return the survey 
+        return SurveyHandle<Components...>(pools); 
     }
 }

@@ -1,6 +1,6 @@
 # ecs tests
 add_executable(ecs_tests
-  ECS/NexusTests.cpp
+  ECS/CommandBufferTests.cpp
 )
 
 target_link_libraries(ecs_tests PRIVATE

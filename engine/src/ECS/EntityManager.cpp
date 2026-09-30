@@ -7,11 +7,11 @@
 namespace Imago::ECS 
 {
 
-    Entity EntityManager::Create() 
+    Entity EntityManager::create() 
     {
 
         // TODO: create non-crash solution for if too many Entity's are created
-        assert(GetAliveCount() < ENTITY_INDEX_MASK && "[ENTITYMANAGER] Max Entities have been generated");
+        assert(get_alive_count() < ENTITY_INDEX_MASK && "[ENTITYMANAGER] Max Entities have been generated");
 
         // recycle and index if there is a free one 
         if (_freeIndices.size() > 0) {
@@ -24,7 +24,7 @@ namespace Imago::ECS
             uint32_t lastGeneration = _generations[lastFreed]; 
 
             // pack the recycled index and its generation into an Entity
-            return MakeEntity(lastFreed, lastGeneration); 
+            return make_entity(lastFreed, lastGeneration); 
 
         // if there is not a free index just create a new one 
         } else {
@@ -36,25 +36,25 @@ namespace Imago::ECS
             _generations.push_back(0); 
 
             // pack the new index and its generation 0 together into an Entity
-            return MakeEntity(nextIndex, 0); 
+            return make_entity(nextIndex, 0); 
 
         }
     }
 
-    void EntityManager::Destroy(Entity e) 
+    void EntityManager::destroy(Entity e) 
     {
 
         // get the validity of the Entity
-        bool valid = IsValid(e); 
+        bool valid = is_valid(e); 
 
         // for release, if an entity is invalid just dont worry about destroying it 
         if (!valid) {
-            spdlog::debug("[ENTITYMANAGER] Destroy called on an already-invalid Entity (index {}, generation{})", GetEntityIndex(e), GetEntityGeneration(e)); 
+            spdlog::debug("[ENTITYMANAGER] Destroy called on an already-invalid Entity (index {}, generation{})", get_entity_index(e), get_entity_generation(e)); 
             return; 
         }
 
         // extract the index from the Entity
-        uint32_t index = GetEntityIndex(e); 
+        uint32_t index = get_entity_index(e); 
 
         // make sure that there is a next valid generation and bump it if so
         //TODO: create non-crash solution for if the max generation is reached 
@@ -65,12 +65,12 @@ namespace Imago::ECS
         _freeIndices.push(index); 
     }
 
-    bool EntityManager::IsValid(Entity e) const 
+    bool EntityManager::is_valid(Entity e) const 
     {
         
         // extract the index and generation from the Entity
-        uint32_t index = GetEntityIndex(e); 
-        uint32_t generation = GetEntityGeneration(e); 
+        uint32_t index = get_entity_index(e); 
+        uint32_t generation = get_entity_generation(e); 
 
         // make sure the index is in the bounds of _generations and that the Entity's generation matches the one in _generations
         if (index < static_cast<uint32_t>(_generations.size()) && _generations[index] == generation) {

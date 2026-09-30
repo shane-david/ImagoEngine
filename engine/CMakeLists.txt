@@ -1,6 +1,7 @@
 add_library(ImagoEngineCore
     src/ECS/EntityManager.cpp
     src/ECS/Nexus.cpp
+    src/ECS/CommandBuffer.cpp
 )
 
 target_include_directories(ImagoEngineCore PUBLIC

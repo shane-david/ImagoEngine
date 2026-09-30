@@ -15,146 +15,146 @@ namespace
   };
 }
 
-TEST_CASE("Insert adds a component and it can be retrieved", "[sparseset]")
+TEST_CASE("insert adds a component and it can be retrieved", "[sparseset]")
 {
   SparseSet<TestComponent> pool;
-  Entity e = MakeEntity(0, 0);
+  Entity e = make_entity(0, 0);
 
-  pool.Insert(e, TestComponent{ 42 });
+  pool.insert(e, TestComponent{ 42 });
 
-  REQUIRE(pool.Has(e));
-  REQUIRE(pool.Get(e).value == 42);
-  REQUIRE(pool.GetSize() == 1);
+  REQUIRE(pool.has(e));
+  REQUIRE(pool.get(e).value == 42);
+  REQUIRE(pool.get_size() == 1);
 }
 
-TEST_CASE("Insert on an already-present entity returns the existing component", "[sparseset]")
+TEST_CASE("insert on an already-present entity returns the existing component", "[sparseset]")
 {
   SparseSet<TestComponent> pool;
-  Entity e = MakeEntity(0, 0);
+  Entity e = make_entity(0, 0);
 
-  pool.Insert(e, TestComponent{ 1 });
-  TestComponent& existing = pool.Insert(e, TestComponent{ 999 }); // should warn, not overwrite
+  pool.insert(e, TestComponent{ 1 });
+  TestComponent& existing = pool.insert(e, TestComponent{ 999 }); // should warn, not overwrite
 
   REQUIRE(existing.value == 1);   // original value preserved
-  REQUIRE(pool.Get(e).value == 1);
-  REQUIRE(pool.GetSize() == 1);   // no duplicate entry
+  REQUIRE(pool.get(e).value == 1);
+  REQUIRE(pool.get_size() == 1);  // no duplicate entry
 }
 
-TEST_CASE("Replace overwrites an existing component in place", "[sparseset]")
+TEST_CASE("replace overwrites an existing component in place", "[sparseset]")
 {
   SparseSet<TestComponent> pool;
-  Entity e = MakeEntity(0, 0);
+  Entity e = make_entity(0, 0);
 
-  pool.Insert(e, TestComponent{ 1 });
-  pool.Replace(e, TestComponent{ 2 });
+  pool.insert(e, TestComponent{ 1 });
+  pool.replace(e, TestComponent{ 2 });
 
-  REQUIRE(pool.Get(e).value == 2);
-  REQUIRE(pool.GetSize() == 1); // still just one entry, not appended
+  REQUIRE(pool.get(e).value == 2);
+  REQUIRE(pool.get_size() == 1); // still just one entry, not appended
 }
 
-TEST_CASE("TryToGet returns nullptr for an entity with no component", "[sparseset]")
+TEST_CASE("try_to_get returns nullptr for an entity with no component", "[sparseset]")
 {
   SparseSet<TestComponent> pool;
-  Entity e = MakeEntity(0, 0);
+  Entity e = make_entity(0, 0);
 
-  REQUIRE(pool.TryToGet(e) == nullptr);
+  REQUIRE(pool.try_to_get(e) == nullptr);
 }
 
-TEST_CASE("TryToGet returns a valid pointer for an entity with a component", "[sparseset]")
+TEST_CASE("try_to_get returns a valid pointer for an entity with a component", "[sparseset]")
 {
   SparseSet<TestComponent> pool;
-  Entity e = MakeEntity(0, 0);
-  pool.Insert(e, TestComponent{ 7 });
+  Entity e = make_entity(0, 0);
+  pool.insert(e, TestComponent{ 7 });
 
-  TestComponent* comp = pool.TryToGet(e);
+  TestComponent* comp = pool.try_to_get(e);
 
   REQUIRE(comp != nullptr);
   REQUIRE(comp->value == 7);
 }
 
-TEST_CASE("Has correctly reports presence and absence", "[sparseset]")
+TEST_CASE("has correctly reports presence and absence", "[sparseset]")
 {
   SparseSet<TestComponent> pool;
-  Entity present = MakeEntity(0, 0);
-  Entity absent = MakeEntity(1, 0);
+  Entity present = make_entity(0, 0);
+  Entity absent = make_entity(1, 0);
 
-  pool.Insert(present, TestComponent{ 1 });
+  pool.insert(present, TestComponent{ 1 });
 
-  REQUIRE(pool.Has(present));
-  REQUIRE_FALSE(pool.Has(absent));
-  REQUIRE_FALSE(pool.Has(NULL_ENTITY));
+  REQUIRE(pool.has(present));
+  REQUIRE_FALSE(pool.has(absent));
+  REQUIRE_FALSE(pool.has(NULL_ENTITY));
 }
 
-TEST_CASE("Remove invalidates the entity in this pool", "[sparseset]")
+TEST_CASE("remove invalidates the entity in this pool", "[sparseset]")
 {
   SparseSet<TestComponent> pool;
-  Entity e = MakeEntity(0, 0);
-  pool.Insert(e, TestComponent{ 1 });
+  Entity e = make_entity(0, 0);
+  pool.insert(e, TestComponent{ 1 });
 
-  pool.Remove(e);
+  pool.remove(e);
 
-  REQUIRE_FALSE(pool.Has(e));
-  REQUIRE(pool.GetSize() == 0);
+  REQUIRE_FALSE(pool.has(e));
+  REQUIRE(pool.get_size() == 0);
 }
 
 TEST_CASE("Removing a non-last entity performs a correct swap-and-pop", "[sparseset]")
 {
   SparseSet<TestComponent> pool;
-  Entity a = MakeEntity(0, 0);
-  Entity b = MakeEntity(1, 0);
-  Entity c = MakeEntity(2, 0);
+  Entity a = make_entity(0, 0);
+  Entity b = make_entity(1, 0);
+  Entity c = make_entity(2, 0);
 
-  pool.Insert(a, TestComponent{ 10 });
-  pool.Insert(b, TestComponent{ 20 });
-  pool.Insert(c, TestComponent{ 30 });
+  pool.insert(a, TestComponent{ 10 });
+  pool.insert(b, TestComponent{ 20 });
+  pool.insert(c, TestComponent{ 30 });
 
-  pool.Remove(b); // middle element - forces the swap path
+  pool.remove(b); // middle element - forces the swap path
 
-  REQUIRE_FALSE(pool.Has(b));
-  REQUIRE(pool.Has(a));
-  REQUIRE(pool.Has(c));
-  REQUIRE(pool.Get(a).value == 10);
-  REQUIRE(pool.Get(c).value == 30); // c's data must survive the swap correctly
-  REQUIRE(pool.GetSize() == 2);
+  REQUIRE_FALSE(pool.has(b));
+  REQUIRE(pool.has(a));
+  REQUIRE(pool.has(c));
+  REQUIRE(pool.get(a).value == 10);
+  REQUIRE(pool.get(c).value == 30); // c's data must survive the swap correctly
+  REQUIRE(pool.get_size() == 2);
 }
 
 TEST_CASE("Removing an already-absent entity is a safe no-op", "[sparseset]")
 {
   SparseSet<TestComponent> pool;
-  Entity e = MakeEntity(0, 0);
+  Entity e = make_entity(0, 0);
 
-  REQUIRE_NOTHROW(pool.Remove(e)); // never inserted, should just warn and return
-  REQUIRE(pool.GetSize() == 0);
+  REQUIRE_NOTHROW(pool.remove(e)); // never inserted, should just warn and return
+  REQUIRE(pool.get_size() == 0);
 }
 
-TEST_CASE("GetEntities returns exactly the entities currently in the pool", "[sparseset]")
+TEST_CASE("get_entities returns exactly the entities currently in the pool", "[sparseset]")
 {
   SparseSet<TestComponent> pool;
-  Entity a = MakeEntity(0, 0);
-  Entity b = MakeEntity(1, 0);
+  Entity a = make_entity(0, 0);
+  Entity b = make_entity(1, 0);
 
-  pool.Insert(a, TestComponent{ 1 });
-  pool.Insert(b, TestComponent{ 2 });
+  pool.insert(a, TestComponent{ 1 });
+  pool.insert(b, TestComponent{ 2 });
 
-  const std::vector<Entity>& entities = pool.GetEntities();
+  const std::vector<Entity>& entities = pool.get_entities();
 
   REQUIRE(entities.size() == 2);
-  REQUIRE(pool.Has(entities[0]));
-  REQUIRE(pool.Has(entities[1]));
+  REQUIRE(pool.has(entities[0]));
+  REQUIRE(pool.has(entities[1]));
 }
 
 TEST_CASE("SparseSet can be used polymorphically through SparseSetBase", "[sparseset]")
 {
   SparseSet<TestComponent> pool;
-  Entity e = MakeEntity(0, 0);
-  pool.Insert(e, TestComponent{ 5 });
+  Entity e = make_entity(0, 0);
+  pool.insert(e, TestComponent{ 5 });
 
   SparseSetBase* base = &pool; // this line alone verifies public inheritance compiles
 
-  REQUIRE(base->Has(e));
-  REQUIRE(base->GetSize() == 1);
-  REQUIRE(base->GetEntities().size() == 1);
+  REQUIRE(base->has(e));
+  REQUIRE(base->get_size() == 1);
+  REQUIRE(base->get_entities().size() == 1);
 
-  base->Remove(e);
-  REQUIRE_FALSE(base->Has(e));
+  base->remove(e);
+  REQUIRE_FALSE(base->has(e));
 }

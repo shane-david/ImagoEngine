@@ -101,8 +101,17 @@ namespace Imago::ECS
         template <typename T>
         SparseSet<T>* find_pool(); 
 
+        /**
+         * @brief performs an Entity's destruction immediately instead of routing through the command buffer
+         * @param e The entity to destroy
+         */
+        void destroy_immediate(Entity e); 
+
     public:
-        
+
+        // NOTE: the Nexus need to be a friend class with the CommandBuffer so that the CommandBuffer can access its private methods for making immediate changes
+        friend class CommandBuffer; 
+
         // default constructor
         Nexus() = default; 
 
@@ -298,7 +307,7 @@ namespace Imago::ECS
         // get the pool for that component type
         SparseSet<T>* pool = find_pool<T>();
         assert(pool != nullptr && "[Nexus] Get called for a component type with no registered pool."); 
-
+        
         // return the component
         return pool->get(e); 
     }

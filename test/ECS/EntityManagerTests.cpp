@@ -6,6 +6,8 @@
 
 using namespace Imago::ECS;
 
+#include <vector>
+
 TEST_CASE("First created entity has index 0 and generation 0", "[entitymanager]")
 {
     EntityManager manager;

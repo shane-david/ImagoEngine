@@ -7,12 +7,14 @@
 #pragma once 
 
 #include <vector> // for storing the queues of deffered binds/unbinds/destroys
+#include <functional> // for std::function for type-erased std::function<void()>>
 
 #include "Imago/ECS/Entity.hpp"
-#include "Imago/ECS/Nexus.hpp"
 
 namespace Imago::ECS 
 {   
+
+    class Nexus; 
 
     /**
      * @brief Queues structural changes to apply all at once when there is no iteration going on. 
@@ -30,6 +32,8 @@ namespace Imago::ECS
 
         Nexus& _nexus; ///> Reference to the Nexus the buffer will apply changes too. There will be one CommandBuffer per scene referencing that scene's Nexus
         std::vector<Entity> _destroyQueue; ///> Queue of Entity's that need to be destroyed 
+        std::vector<std::function<void()>> _bindQueue; ///> Queue of the lambda functions to the bind commands that need to be executed
+        std::vector<std::function<void()>> _unbindQueue; ///> Queue of the lambda functions to the unbind commands that need to be executed 
 
     public:
         
@@ -45,10 +49,39 @@ namespace Imago::ECS
          */
         void defer_destroy(Entity e); 
 
+        // NOTE: we are storing our bind and unbind queues as type erased std::function<void()> storing lambda functions objects
+        // that wrap a lambda with the logic necessary to bind/unbind/patch on specific component. This solves the problem that not every bind command is the same
+        // and therefore cannot be stored in a std::vector since its type depends on what component is being bound. Wrapping them in a std::function<void()> erases
+        // that type difference, allowing them to all be stored in a single vector. 
+
+        /**
+         * @brief Queues a bind_immediate command lambda 
+         * @tparam T The component type that is being bound
+         * @param e The entity to bind the component to
+         * @param component The component data
+         */
+        template <typename T> 
+        void defer_bind(Entity e, T component); 
+
+        /**
+         * @brief Queues an unbind_immediate command lambda
+         * @tparam T The component type that is being unbound
+         * @param e The entinty whose component of type T is being unbound 
+         */
+        template <typename T>
+        void defer_unbind(Entity e); 
+
         /**
          * @brief go through all the defer queues and actually apply the operations to the associated Nexus. 
-         * 
          */
         void flush(); 
     }; 
+
+    // NOTE: Command Buffer definitions are located in Nexus.hpp. This is becuase of the circular include. C++ 
+    // will not allow Imago/ECS/Nexus.hpp to be included in this file because this file is included in Nexus.hpp
+    // this means we have to do an incomplete class definition instead of an include to get _nexus in the class
+    // definition. However, we can not have the function definitions here becuase they actually call a Nexus 
+    // method and therefore need the full definitions. And, since they are templated they cannot be in CommandBuffer.cpp either.
+    // The most natural and least complicated place for them now is at the bottom of the Nexus.hpp file since the CommandBuffer
+    // is intimately related to the Nexus. 
 }

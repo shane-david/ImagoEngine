@@ -17,6 +17,7 @@
 #include "Imago/ECS/SparseSet.hpp"
 #include "Imago/ECS/SparseSetBase.hpp"
 #include "Imago/ECS/SurveyHandle.hpp"
+#include "Imago/ECS/CommandBuffer.hpp"
 
 namespace Imago::ECS 
 {
@@ -79,6 +80,7 @@ namespace Imago::ECS
     private:
         
         EntityManager _entityManager; ///> Nexus owns entity lifetime and is the only intended caller of the EntityManager
+        CommandBuffer _commandBuffer; ///> Nexus owns the lifetime of a single CommandBuffer for all deferred commands 
         std::unordered_map<ComponentTypeId, std::unique_ptr<SparseSetBase>> _pools; ///> unorder map of component pools, one SparseSetBase per component type, keyed with ids
         
         /**
@@ -107,13 +109,32 @@ namespace Imago::ECS
          */
         void destroy_immediate(Entity e); 
 
+        /**
+         * @brief performs a bind on an Entity immediately instead of routing through the command buffer
+         * @tparam The component type to be bound
+         * @param e The entity to bind the component to
+         * @param component The comonent data
+         */
+        template <typename T>
+        void bind_immediate(Entity e, T component); 
+
+        /**
+         * @brief performs an unbind on an Entity immediately instead of routing through the command buffer
+         * @tparam The component type to be unbound
+         * @param e The entity whose coomponent of type T is being unbound 
+         */
+        template <typename T>
+        void unbind_immediate(Entity e); 
+
     public:
 
         // NOTE: the Nexus need to be a friend class with the CommandBuffer so that the CommandBuffer can access its private methods for making immediate changes
         friend class CommandBuffer; 
 
-        // default constructor
-        Nexus() = default; 
+        /**
+         * @brief Construct a new Nexus object and instantiates the command buffer
+         */
+        Nexus(); 
 
         // explicitly disallow copy behavior
         Nexus(const Nexus&) = delete; 
@@ -137,6 +158,10 @@ namespace Imago::ECS
 
         /**
          * @brief Checks whether an Entity is still valid
+         * 
+         * This is a structual change so it is automatically routed to the command buffer and the change is actually made 
+         * in destroy_immediate at the end of the current frame.
+         * 
          * @param e The Entity to check
          * @return true if the Entity is valid
          * @return false if the Entity is not valid
@@ -150,16 +175,23 @@ namespace Imago::ECS
          * Binding a component to an Entity that already has that component will flag a warning and do nothing,
          * replacing component data must be done through Patch<T>()
          * 
+         * This is a structual change so it is automatically routed to the command buffer and the change is actually made 
+         * in bind_immediate at the end of the current frame.
+         * 
          * @tparam T The component type to bind.
          * @param e The entity to bind the component to.
          * @param component The actual component data to bind
          * @return A reference to the component 
          */
         template <typename T>
-        T& bind(Entity e, T component); 
+        void bind(Entity e, T component); 
 
         /**
          * @brief Unbinds a component of type T from Entity e if possible. 
+         * 
+         * This is a structual change so it is automatically routed to the command buffer and the change is actually made 
+         * in unbind_immediate at the end of the current frame.
+         * 
          * @tparam T The component type to unbind.
          * @param e The entity to unbind the component from. 
          */
@@ -177,7 +209,7 @@ namespace Imago::ECS
          * @return A reference to the updated component. 
          */
         template <typename T>
-        T& patch(Entity e, T component); 
+        void patch(Entity e, T component); 
 
         /**
          * @brief Returns a reference to the Entity's component of type T. 
@@ -226,6 +258,15 @@ namespace Imago::ECS
         template <typename... Components>
         SurveyHandle<Components...> survey(); 
 
+        //-----------------------
+        //Command Buffer Methods
+        //-----------------------
+
+        /**
+         * @brief calls _commandBuffer.flush() to call the immediate methods that actually apply the deferred changes in the CommandBuffer
+         */
+        void flush(); 
+
     }; 
 
     //-----------
@@ -268,20 +309,19 @@ namespace Imago::ECS
         return static_cast<SparseSet<T>*>(location->second.get()); 
     }
 
-    //TODO: set up error messaging so it reports it through Nexus to avoid user confusion 
     template <typename T>
-    T& Nexus::bind(Entity e, T component) 
-    { 
+    void Nexus::bind_immediate(Entity e, T component) 
+    {
         // get the pool for that component type
         SparseSet<T>* pool = get_pool<T>(); 
 
-        // add the component to that pool and return it
-        return pool->insert(e, std::move(component)); 
+        // add the component to that pool
+        pool->insert(e, std::move(component)); 
     }
 
     template <typename T>
-    void Nexus::unbind(Entity e) 
-    {  
+    void Nexus::unbind_immediate(Entity e) 
+    {
         // get the pool for that component type
         SparseSet<T>* pool = find_pool<T>();
         if (pool == nullptr) return; 
@@ -292,13 +332,26 @@ namespace Imago::ECS
 
     //TODO: set up error messaging so it reports it through Nexus to avoid user confusion 
     template <typename T>
-    T& Nexus::patch(Entity e, T component) 
+    void Nexus::bind(Entity e, T component) 
+    { 
+        _commandBuffer.defer_bind<T>(e, component); 
+    }
+
+    template <typename T>
+    void Nexus::unbind(Entity e) 
+    {  
+        _commandBuffer.defer_unbind<T>(e); 
+    }
+
+    //TODO: set up error messaging so it reports it through Nexus to avoid user confusion 
+    template <typename T>
+    void Nexus::patch(Entity e, T component) 
     {
         // get the pool for that component type
         SparseSet<T>* pool = get_pool<T>();
 
-        // replace that component and return it 
-        return pool->replace(e, std::move(component)); 
+        // replace that component 
+        pool->replace(e, std::move(component)); 
     }
 
     template <typename T>
@@ -343,5 +396,27 @@ namespace Imago::ECS
         
         // construct and return the survey 
         return SurveyHandle<Components...>(pools); 
+    }
+
+    //--------------------------
+    // Command Buffer Defintions
+    //--------------------------
+
+    template <typename T>
+    void CommandBuffer::defer_bind(Entity e, T component) 
+    {
+        // create and push back the lambda for a bind command
+        _bindQueue.push_back([this, e, component]() {
+            _nexus.bind_immediate<T>(e, std::move(component)); 
+        }); 
+    }
+
+    template <typename T>
+    void CommandBuffer::defer_unbind(Entity e) 
+    {
+        // create and push back the lambda for an unbind command
+        _unbindQueue.push_back([this, e]() {
+            _nexus.unbind_immediate<T>(e); 
+        }); 
     }
 }

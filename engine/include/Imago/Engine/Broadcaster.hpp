@@ -7,6 +7,11 @@
 #include <cstdint> // for uint32_t 
 #include <functional> // for std::function 
 #include <unordered_map> // for std::unordered_map
+#include <algorithm> // for std::find 
+#include <cassert> // for assert
+#include <type_traits> // for checking if T is a const reference in subscribe and unsubscribe 
+#include <spdlog/spdlog.h> // for error logging 
+
 
 #pragma once
 
@@ -82,7 +87,18 @@ namespace Imago::Engine
         //NOTE: this variable exists so we can keep track of how many broadcasts emit has made 
         //and not subscribe or unsubscribe from any systems during an emit
 
-        uint32_t _broadcastDepth; ///> counter for how many broadcasts emit has made
+        uint32_t _broadcastDepth; ///> counter for how many broadcasts emit is making
+
+        /**
+         * @brief Private helper function to find a subscriber given a vector of subscribers.
+         * 
+         * This is used to determine in subscribe if a subscriber already exists and in unsubscribe to determine if the subscription never existed in the first place. 
+         * 
+         * @param subscribers The vector of Subscribers to check
+         * @param system The system to look for 
+         * @return std::vector<Subscriber>::iterator pointing to the subscriber if it is found 
+         */
+        static std::vector<Subscriber>::iterator find_subscriber(std::vector<Subscriber>& subscribers, ErasedFn system); 
     
     public:
         
@@ -105,6 +121,10 @@ namespace Imago::Engine
 
         /**
          * @brief Call every system subscribed to EventType T in subcription order. 
+         * 
+         * emit<T>() simply does nothing if there are no systems subscribed to a particular event. 
+         * It also increments _broadcast depth for every emit currently happening. 
+         * 
          * @tparam The Event Type data to broadcast
          * @param event The Event to emit. 
          */
@@ -131,5 +151,115 @@ namespace Imago::Engine
         template <typename T>
         void unsubscribe(SystemFn<T> system); 
 
+        /**
+         * @brief Drops every subscriptoin for every event type. 
+         */
+        void clear(); 
+
     }; 
+
+    //-----------
+    //definitions
+    //-----------
+
+    template <typename T>
+    void Broadcaster::emit(const T& event) 
+    {
+        // get the id at this event type
+        EventTypeId id = get_event_type_id<T>(); 
+
+        // if the event vector does not exist return 
+        auto it = _subscribers.find(id); 
+        if (it == _subscribers.end()) return; 
+
+        // if we are here it was found so get a reference
+        std::vector<Subscriber>& subscribers = it->second; 
+
+        // iterate though it calling the lambgas and keeping track of broadcast depth accordingly 
+        _broadcastDepth++; 
+        for (const Subscriber& subscriber : subscribers) {
+            subscriber.invoke(_ctx, &event);
+        }
+        _broadcastDepth--; 
+    }
+
+    template <typename T>
+    void Broadcaster::subscribe(SystemFn<T> system) 
+    {
+        // make sure T is not a const reference so that ids do not get messaed up 
+        static_assert(!std::is_const_v<T> && !std::is_reference_v<T>, "[Broadcaster] Event type T must not be const or a reference");
+
+        //TODO: eventually have a system for this that just waits on the subscribe instead of crashing 
+        // ensure ther are no broadcasts currently occuring 
+        assert(_broadcastDepth == 0 && "[Broadcaster] you are trying to subscribe to an event while the Broadcaster is emitting!"); 
+
+        //TODO: this should crash the game in a build come up for a solution with this with the logger
+        // ensure the system is not null 
+        assert(system != nullptr && "[Broadcaster] you are trying to subscribe a null system to an event!"); 
+
+        // get the id of the event being subscribe dto
+        EventTypeId id = get_event_type_id<T>(); 
+
+        // create or get the vector the matches with id 
+        std::vector<Subscriber>& subscribers = _subscribers[id]; 
+
+        //NOTE: in c++ reinterpret_cast<T>() tells the compiler to treat the same bits as a different type with no conversion and no checking 
+        // in this case, since we are casting function pointers the address (which is what we want) will stay the same and the type the compiler associates
+        // with it will change so we can store all system addresses in the same vector. 
+
+        // convert the system to ErasedFn to store its address and make sure that system is not alreayd in the vector 
+        ErasedFn erasedSystem = reinterpret_cast<ErasedFn>(system);
+        if (find_subscriber(subscribers, erasedSystem) != subscribers.end()) return; 
+
+        // buld the Subscriber wrapper and add it the _subscribers
+        Subscriber subscriber = {
+            erasedSystem, 
+            [system](SceneContext& ctx, const void* event) {
+                system(ctx, *static_cast<const T*>(event)); 
+            }
+        };
+        subscribers.push_back(subscriber); 
+    }
+
+    template <typename T>
+    void Broadcaster::unsubscribe(SystemFn<T> system) 
+    {
+        // make sure T is not a const reference so that ids do not get messaed up 
+        static_assert(!std::is_const_v<T> && !std::is_reference_v<T>, "[Broadcaster] Event type T must not be const or a reference");
+
+        //TODO: eventually have a system for this that just waits on the subscribe instead of crashing 
+        // ensure ther are no broadcasts currently occuring 
+        assert(_broadcastDepth == 0 && "[Broadcaster] you are trying to unsubscribe from an event while the Broadcaster is emitting!"); 
+
+        //TODO: intergrate spdlog into editor logger once it exists
+        // get the id of the event and make sure it existt
+        EventTypeId id = get_event_type_id<T>(); 
+        auto it = _subscribers.find(id); 
+        if (it == _subscribers.end()) {
+            spdlog::warn("[Broadcaster] You are trying to unsubscribe from an event that the system is already not subscribed to"); 
+            return; 
+        }
+
+        // get reference to the subscribers vector
+        std::vector<Subscriber>& subscribers = it->second; 
+
+        // convert to erasedFn so we can check the address
+        ErasedFn erasedSystem = reinterpret_cast<ErasedFn>(system);
+        
+        //NOTE: remove if shifts the elements that do not match the condition in the lambda toward the front and return an iterator to where the end
+        // would be if the ones that did match were gone. 
+
+        // erase the subscriber from its vector if addresss match, storing whether or not something was removed
+        auto newEnd = std::remove_if(subscribers.begin(), subscribers.end(), [erasedSystem](const Subscriber& s) { return s.systemAddress == erasedSystem ; }); 
+
+        //TODO: intergrate spdlog into editor logger once it exists
+        // if nothing changed, report and return 
+        if (newEnd == subscribers.end()) {
+            spdlog::warn("[Broadcaster] You are trying to unsubscribe from an event that the system is already not subscribed to"); 
+            return; 
+        }
+
+        // if something changed, remove it 
+        subscribers.erase(newEnd, subscribers.end()); 
+    }
 }

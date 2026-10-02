@@ -101,6 +101,7 @@ namespace Imago::ECS
         // ensure that the Entity's size is under the maximum entities
         assert(index < ENTITY_INDEX_MASK && "[SparseSet] Insert call with an out-of-range Entity index"); 
 
+        //TODO: intergrate spdlog into editor logger once it exists
         // ensure that the Entity does not already have a component
         if (index < _sparse.size() && _sparse[index] != INVALID_INDEX) {
             spdlog::warn("[SparseSet] You are trying to add a component that Entity {} already has. Please use Nexus.Patch() instead", index); 
@@ -191,6 +192,7 @@ namespace Imago::ECS
         // unpack the Entity index
         uint32_t index = get_entity_index(e); 
 
+        //TODO: intergrate spdlog into editor logger once it exists
         // ensure that the entity actually does have a component in the sparse set
         if (index >= _sparse.size() || _sparse[index] == INVALID_INDEX) {
             spdlog::warn("[SparseSet] Cannot remove component at index {} because there is no component to remove.", index);

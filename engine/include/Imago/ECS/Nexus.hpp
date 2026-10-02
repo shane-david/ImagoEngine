@@ -63,7 +63,7 @@ namespace Imago::ECS
     template <typename T>
     ComponentTypeId get_component_type_id() 
     {
-        static ComponentTypeId id = detail::next_component_type_id(); // assigned only once for the first function call
+        static const ComponentTypeId id = detail::next_component_type_id(); // assigned only once for the first function call
         return id; 
     }
 

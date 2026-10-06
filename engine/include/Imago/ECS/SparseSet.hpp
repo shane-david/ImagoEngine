@@ -85,6 +85,8 @@ namespace Imago::ECS
         bool has(Entity e) const override;
         size_t get_size() const override; 
         const std::vector<Entity>& get_entities() const override; 
+        size_t get_index(Entity e) const override; 
+        void swap_entities(Entity e1, Entity e2) override; 
     }; 
 
     //------------

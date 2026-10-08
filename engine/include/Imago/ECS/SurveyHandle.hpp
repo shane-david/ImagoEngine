@@ -34,8 +34,8 @@ namespace Imago::ECS
         
         // Note: we are using an array here instead of a vector because the count of components and hence the size of the _pools array will be known at compile time
 
-        std::array<SparseSetBase*, sizeof...(Components)> _pools; ///> _pools the Survey is finding Entities for
-        SparseSetBase* _smallestPool; ///> the smallest of the pools being surveyed 
+        std::array<SparseSetBase*, sizeof...(Components)> _pools; ///< _pools the Survey is finding Entities for
+        SparseSetBase* _smallestPool; ///< the smallest of the pools being surveyed 
 
     public: 
 
@@ -54,7 +54,7 @@ namespace Imago::ECS
             : _pools(pools)
         {   
             // ensure an empty array was not passed in 
-            static_assert(sizeof...(Components) > 0, "[Survey] Must be queried for at least one component type."); 
+            static_assert(sizeof...(Components) > 0, "[SurveyHandle] Must be queried for at least one component type."); 
 
             // find and set the smallest pool with a linear scan 
             _smallestPool = _pools[0]; 

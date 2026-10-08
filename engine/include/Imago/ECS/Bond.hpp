@@ -30,7 +30,7 @@ namespace Imago::ECS
     private: 
         
         std::vector<SparseSetBase*> _ownedPools; ///< pools this Bond has exclusive ownership of (right to reorder)
-        size_t _bondSize = 0; ///> number of Entities at the front of every pool that have all Bonded components 
+        size_t _bondSize = 0; ///< number of Entities at the front of every pool that have all Bonded components 
 
         friend class Nexus; 
         
@@ -86,5 +86,10 @@ namespace Imago::ECS
          * @brief Returns the entity array of the first owned pool. 
          */
         const std::vector<Entity>& get_entities() const; 
+
+        /**
+         * @brief Returns the number of component pools in the bond 
+         */
+        size_t get_pool_count() const; 
     }; 
 }

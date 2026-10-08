@@ -1,6 +1,6 @@
 # ecs tests
 add_executable(ecs_tests
-  Engine/BroadcasterTests.cpp
+  ECS/BondTests.cpp
 )
 
 target_link_libraries(ecs_tests PRIVATE

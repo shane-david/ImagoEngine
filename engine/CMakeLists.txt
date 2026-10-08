@@ -2,6 +2,7 @@ add_library(ImagoEngineCore
     src/ECS/EntityManager.cpp
     src/ECS/Nexus.cpp
     src/ECS/CommandBuffer.cpp
+    src/ECS/Bond.cpp
     src/Engine/Broadcaster.cpp
 )
 

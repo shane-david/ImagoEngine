@@ -30,10 +30,10 @@ namespace Imago::ECS
     class CommandBuffer {
     private:
 
-        Nexus& _nexus; ///> Reference to the Nexus the buffer will apply changes too. There will be one CommandBuffer per scene referencing that scene's Nexus
-        std::vector<Entity> _destroyQueue; ///> Queue of Entity's that need to be destroyed 
-        std::vector<std::function<void()>> _bindQueue; ///> Queue of the lambda functions to the bind commands that need to be executed
-        std::vector<std::function<void()>> _unbindQueue; ///> Queue of the lambda functions to the unbind commands that need to be executed 
+        Nexus& _nexus; ///< Reference to the Nexus the buffer will apply changes too. There will be one CommandBuffer per scene referencing that scene's Nexus
+        std::vector<Entity> _destroyQueue; ///< Queue of Entity's that need to be destroyed 
+        std::vector<std::function<void()>> _bindQueue; ///< Queue of the lambda functions to the bind commands that need to be executed
+        std::vector<std::function<void()>> _unbindQueue; ///< Queue of the lambda functions to the unbind commands that need to be executed 
 
     public:
         

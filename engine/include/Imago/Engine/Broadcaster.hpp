@@ -78,16 +78,16 @@ namespace Imago::Engine
          */
         struct Subscriber {
             ErasedFn systemAddress;
-            std::function<void(SceneContext&, const void*)> invoke; ///> the wrapper built in subscribe<T> that casts the event back to const T* and calls the system
+            std::function<void(SceneContext&, const void*)> invoke; ///< the wrapper built in subscribe<T> that casts the event back to const T* and calls the system
         }; 
 
-        SceneContext& _ctx; ///> reference to the SceneContext that will be passed to all subscribed systems
-        std::unordered_map<EventTypeId, std::vector<Subscriber>> _subscribers; 
+        SceneContext& _ctx; ///< reference to the SceneContext that will be passed to all subscribed systems
+        std::unordered_map<EventTypeId, std::vector<Subscriber>> _subscribers; ///< map of Events to the subscribers to that event 
 
         //NOTE: this variable exists so we can keep track of how many broadcasts emit has made 
         //and not subscribe or unsubscribe from any systems during an emit
 
-        uint32_t _broadcastDepth; ///> counter for how many broadcasts emit is making
+        uint32_t _broadcastDepth; ///< counter for how many broadcasts emit is making
 
         /**
          * @brief Private helper function to find a subscriber given a vector of subscribers.

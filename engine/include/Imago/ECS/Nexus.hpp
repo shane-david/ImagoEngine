@@ -11,6 +11,9 @@
 #include <array> // to construct surveys 
 #include <memory> // for std::unique_ptr
 #include <utility> // for std::move
+#include <cassert> // for bond asserts
+#include <cstdlib> // for std::abort
+#include <vector> // for bonds 
 
 #include "Imago/ECS/Entity.hpp"
 #include "Imago/ECS/EntityManager.hpp"
@@ -18,6 +21,8 @@
 #include "Imago/ECS/SparseSetBase.hpp"
 #include "Imago/ECS/SurveyHandle.hpp"
 #include "Imago/ECS/CommandBuffer.hpp"
+#include "Imago/ECS/Bond.hpp"
+#include "Imago/ECS/BondHandle.hpp"
 
 namespace Imago::ECS 
 {
@@ -79,9 +84,11 @@ namespace Imago::ECS
     class Nexus {
     private:
         
-        EntityManager _entityManager; ///> Nexus owns entity lifetime and is the only intended caller of the EntityManager
-        CommandBuffer _commandBuffer; ///> Nexus owns the lifetime of a single CommandBuffer for all deferred commands 
-        std::unordered_map<ComponentTypeId, std::unique_ptr<SparseSetBase>> _pools; ///> unorder map of component pools, one SparseSetBase per component type, keyed with ids
+        EntityManager _entityManager; ///< Nexus owns entity lifetime and is the only intended caller of the EntityManager
+        CommandBuffer _commandBuffer; ///< Nexus owns the lifetime of a single CommandBuffer for all deferred commands 
+        std::unordered_map<ComponentTypeId, std::unique_ptr<SparseSetBase>> _pools; ///< unorder map of component pools, one SparseSetBase per component type, keyed with ids
+        std::vector<std::unique_ptr<Bond>> _bonds; ///< vector of all created bonds as unique pointers because the Nexus owns their entire lifetime 
+        std::unordered_map<ComponentTypeId, Bond*> _bondMap; ///< map from component types to bonds to tell us what bonds are associated with what component types, raw pointer because bonds are owned in _bonds
         
         /**
          * @brief Returns the pool of the component type T. 
@@ -125,6 +132,9 @@ namespace Imago::ECS
          */
         template <typename T>
         void unbind_immediate(Entity e); 
+
+        template <typename T>
+        Bond* find_bond(); 
 
     public:
 
@@ -258,6 +268,16 @@ namespace Imago::ECS
         template <typename... Components>
         SurveyHandle<Components...> survey(); 
 
+        /**
+         * @brief Returns a BondHandle (a view of the Bond) if one already exists for the components 
+         * and creates one if possible and returns the view if one does not already exist. 
+         * 
+         * @tparam Components to Bond
+         * @return The BondHandle of bonded components
+         */
+        template <typename... Components>
+        BondHandle<Components...> bond(); 
+
         //-----------------------
         //Command Buffer Methods
         //-----------------------
@@ -317,6 +337,12 @@ namespace Imago::ECS
 
         // add the component to that pool
         pool->insert(e, std::move(component)); 
+
+        // notify the bonds about the bind if any (this goes after the insert)
+        Bond* currentBond = find_bond<T>(); 
+        if (currentBond != nullptr) {
+            currentBond->on_component_bound(e); 
+        }
     }
 
     template <typename T>
@@ -326,8 +352,32 @@ namespace Imago::ECS
         SparseSet<T>* pool = find_pool<T>();
         if (pool == nullptr) return; 
 
+        // notify the bonds about the unbind if any (this goes before the removal)
+        Bond* currentBond = find_bond<T>();
+        if (currentBond != nullptr) {
+            currentBond->on_component_unbound(e); 
+        }
+
         // remove the component from that pool
         pool->remove(e); 
+    }
+
+    template <typename T>
+    Bond* Nexus::find_bond() 
+    {
+        // get the id at the component type 
+        ComponentTypeId id = get_component_type_id<T>(); 
+
+        // try to find the id in _bondMap
+        auto location = _bondMap.find(id); 
+
+        // if it does not exist return nullptr
+        if (location == _bondMap.end()) {
+            return nullptr; 
+        }
+
+        // otherwise return the bond
+        return location->second; 
     }
 
     //TODO: set up error messaging so it reports it through Nexus to avoid user confusion 
@@ -396,6 +446,75 @@ namespace Imago::ECS
         
         // construct and return the survey 
         return SurveyHandle<Components...>(pools); 
+    }
+
+    template <typename... Components>
+    BondHandle<Components...> Nexus::bond() 
+    {
+        // collect the component type ids of the passed in pools 
+        std::array<ComponentTypeId, sizeof...(Components)> poolTypes = { get_component_type_id<Components>() ... }; 
+
+        // create variables to determine whether the ids match a created bond or not 
+        Bond* found = nullptr; // the matching bond if one exists (first one seen) 
+        size_t mapped = 0; // how many ids already belong to a bond
+        bool sameBond = true; // whether or not the requested ids belong to the same bond 
+
+        // loop through the component types to determine if a bond already exists, or if it does not and can/cannot be created
+        for (ComponentTypeId id : poolTypes) {
+
+            // go to the next id if it is not associated with any bonds
+            auto location = _bondMap.find(id); 
+            if (location == _bondMap.end()) continue; 
+
+            // if the id is associated with a bond increase mapped 
+            mapped++; 
+
+            // if found is still null set it so we can keep track of it in the future 
+            if (found == nullptr) {
+
+                found = location->second; 
+
+            // if found is not associated with the currend id's bond it is not the sameBond
+            } else if (found != location->second) {
+                sameBond = false; 
+            }
+        }
+
+        // if none of hte ids belong to a bond we can create a new one 
+        if (mapped == 0) {
+
+            // get the pools requested for the bond
+            std::vector<SparseSetBase*> pools = { get_pool<Components>()... }; 
+            
+            // NOTE: we use a rew pointer and owned to create this unique pointer instead of make_unique
+            // because the constructor is private and only accessible because of the friend class
+            // and make_unique constructs the object inside as std::function that is not a friend of Bond
+
+            // create the bond 
+            std::unique_ptr<Bond> owned(new Bond(std::move(pools))); 
+
+            // get the raw Bond pointer and put it in the bond map for every bonded component
+            Bond* bondPtr = owned.get();
+            for (ComponentTypeId id : poolTypes) {
+                _bondMap[id] = bondPtr; 
+            }
+
+            // put the unique pointer in the bonds vector (leaves owned empty) 
+            _bonds.push_back(std::move(owned)); 
+
+            // return the BondHandle
+            return BondHandle<Components...>(bondPtr); 
+        } 
+
+        // if every id belongs to the same Bond, we can just create the BondHandle
+        if (mapped == sizeof...(Components) && sameBond && found->get_pool_count() == sizeof...(Components)) {
+            return BondHandle<Components...>(found); 
+        }
+
+        // anything else means there is no bond and it can not be created because it shares a component pool with an existing bond 
+        //TODO: integrate failure for this case with the logger (ideally it can be a compiler error before the user even runs code) 
+        assert(false && "[Nexus] bond<>() was requested for components that are already bonded!");
+        std::abort(); 
     }
 
     //--------------------------

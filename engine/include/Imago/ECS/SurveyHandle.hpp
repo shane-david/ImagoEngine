@@ -18,7 +18,7 @@
 namespace Imago::ECS 
 {
 
-    // Note: Survey<Components...> can take any number of component types. This is using a C++ variadic template parameter pack
+    // Note: SurveyHandle<Components...> can take any number of component types. This is using a C++ variadic template parameter pack
 
     /**
      * @brief The Survey takes Componets as templated arguments and acts as an iterator over all entities with all component types
@@ -34,8 +34,8 @@ namespace Imago::ECS
         
         // Note: we are using an array here instead of a vector because the count of components and hence the size of the _pools array will be known at compile time
 
-        std::array<SparseSetBase*, sizeof...(Components)> _pools; ///> _pools the Survey is finding Entities for
-        SparseSetBase* _smallestPool; ///> the smallest of the pools being surveyed 
+        std::array<SparseSetBase*, sizeof...(Components)> _pools; ///< _pools the Survey is finding Entities for
+        SparseSetBase* _smallestPool; ///< the smallest of the pools being surveyed 
 
     public: 
 
@@ -54,7 +54,7 @@ namespace Imago::ECS
             : _pools(pools)
         {   
             // ensure an empty array was not passed in 
-            static_assert(sizeof...(Components) > 0, "[Survey] Must be queried for at least one component type."); 
+            static_assert(sizeof...(Components) > 0, "[SurveyHandle] Must be queried for at least one component type."); 
 
             // find and set the smallest pool with a linear scan 
             _smallestPool = _pools[0]; 
@@ -90,7 +90,7 @@ namespace Imago::ECS
             }
 
             /**
-             * @brief Determines whether or not a specified Entitys is in every requested pool.
+             * @brief Determines whether or not a specified Entity is in every requested pool.
              * @param e The Entity to check. 
              * @return true if the Entity is in every requested pool.
              * @return false if the Entity is not in every requested pool. 
@@ -109,7 +109,6 @@ namespace Imago::ECS
                 // if we make it out every entity had the pool so return true
                 return true; 
             }
-
 
             // data 
             const std::vector<Entity>* _entities; ///< vector of Entities of the smallest pool
@@ -169,8 +168,6 @@ namespace Imago::ECS
 
         /**
          * @brief Returns an Iterator to the first element. 
-         * 
-         * @return Iterator pointing to the first element
          */
         Iterator begin() const 
         {
@@ -179,8 +176,6 @@ namespace Imago::ECS
 
         /**
          * @brief Returns an Iterator past the last element
-         * 
-         * @return Iterator representing the end of the collection
          */
         Iterator end() const 
         {

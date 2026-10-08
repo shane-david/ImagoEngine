@@ -19,6 +19,12 @@ namespace Imago::ECS
 
     void Nexus::destroy_immediate(Entity e) 
     {
+        // before removing anything, notify the bonds that this entity was destoryed
+        // this is safe even if the entity is not in any pools owned by bonds because the notification will just do nothing
+        for (const std::unique_ptr<Bond>& bondPtr : _bonds) {
+            bondPtr->on_component_unbound(e); 
+        }
+
         // iterate through pools 
         for (const auto& [_, value] : _pools) {
 

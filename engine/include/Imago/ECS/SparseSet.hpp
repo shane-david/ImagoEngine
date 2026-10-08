@@ -85,6 +85,8 @@ namespace Imago::ECS
         bool has(Entity e) const override;
         size_t get_size() const override; 
         const std::vector<Entity>& get_entities() const override; 
+        size_t get_index(Entity e) const override; 
+        void swap_entities(Entity e1, Entity e2) override; 
     }; 
 
     //------------
@@ -243,5 +245,44 @@ namespace Imago::ECS
     template <typename T>
     const std::vector<Entity>& SparseSet<T>::get_entities() const {
         return _entities; 
+    }
+
+    template <typename T>
+    size_t SparseSet<T>::get_index(Entity e) const {
+        
+        // extract the Entity's index 
+        uint32_t index = get_entity_index(e); 
+
+        // make sure the entity is in the pool 
+        assert(index < _sparse.size() && _sparse[index] != INVALID_INDEX && "[SparseSet] get_index called on an Entity with no component in this pool"); 
+
+        // return static cast of the dense index converted to size_t 
+        return static_cast<size_t>(_sparse[index]); 
+    }
+
+    template <typename T>
+    void SparseSet<T>::swap_entities(Entity e1, Entity e2) {
+
+        // extract both entity indexs 
+        uint32_t index1 = get_entity_index(e1); 
+        uint32_t index2 = get_entity_index(e2); 
+
+        // make sure both entity's are in the pool 
+        assert(index1 < _sparse.size() && _sparse[index1] != INVALID_INDEX && "[SparseSet] swap_entities called on an Entity with no component in this pool"); 
+        assert(index2 < _sparse.size() && _sparse[index2] != INVALID_INDEX && "[SparseSet] swap_entities called on an Entity with no component in this pool"); 
+
+        // get the dense positions from the _sparse array 
+        uint32_t pos1 = _sparse[index1]; 
+        uint32_t pos2 = _sparse[index2]; 
+
+        // if they are the same position just return and do not do anything 
+        if (pos1 == pos2) return; 
+
+        // swap the elements in _dense and _entities
+        std::swap(_dense[pos1], _dense[pos2]); 
+        std::swap(_entities[pos1], _entities[pos2]); 
+
+        // fix _sparse so that it holds the proper indices still
+        std::swap(_sparse[index1], _sparse[index2]); 
     }
 }

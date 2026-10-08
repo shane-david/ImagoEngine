@@ -49,5 +49,18 @@ namespace Imago::ECS
          * @return the dense array of Entities 
          */
         virtual const std::vector<Entity>& get_entities() const = 0; 
+
+        /**
+         * @brief Returns the index of the specified Entity.
+         * @param e The entity's whose index to return.
+         */
+        virtual size_t get_index(Entity e) const = 0; 
+
+        /**
+         * @brief Swaps e1 with e2 in _dense, _entities, and _sparse
+         * @param e1 First Entity to swap. 
+         * @param e2 Second Entity to swap. 
+         */
+        virtual void swap_entities(Entity e1, Entity e2) = 0; 
     }; 
 }

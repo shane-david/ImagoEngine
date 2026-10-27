@@ -4,6 +4,7 @@ add_library(ImagoEngineCore
     src/ECS/CommandBuffer.cpp
     src/ECS/Bond.cpp
     src/Engine/Broadcaster.cpp
+    src/Engine/SystemScheduler.cpp
 )
 
 target_include_directories(ImagoEngineCore PUBLIC

@@ -113,7 +113,7 @@ namespace Imago::Engine
          * @brief Sets the most fixed steps that can run in one tick. Must be greater than 0. 
          * @param maxSteps What the new max should be. 
          */
-        void set_max_fixed_timestep(uint32_t maxSteps);
+        void set_max_fixed_steps(uint32_t maxSteps);
 
         /**
          * @brief Returns the fraction of the fiexed step left in the accumulator (0 to >1). For render interpolation. 

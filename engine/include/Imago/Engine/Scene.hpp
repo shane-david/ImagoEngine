@@ -14,6 +14,14 @@
 namespace Imago::Engine 
 {
 
+    /**
+     * @brief Abstract Base Class for every Scene. Users inherit from this class and override on_load() and optionally on_unload() in order 
+     * to create their entites, registers systems, and subscribe to events.
+     * 
+     * A Scene owns everything that its systems run against. It owns its own copy of the SceneContext with `nexus` and `broadcaster` pointing
+     * at its own members so the Scene must stay self-consistent for its whole life. 
+     * 
+     */
     class Scene {
     protected:
         

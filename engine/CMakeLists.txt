@@ -6,6 +6,7 @@ add_library(ImagoEngineCore
     src/Engine/Broadcaster.cpp
     src/Engine/SystemScheduler.cpp
     src/Engine/Scene.cpp
+    src/Engine/SceneManager.cpp
 )
 
 target_include_directories(ImagoEngineCore PUBLIC

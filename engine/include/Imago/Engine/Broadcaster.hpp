@@ -4,6 +4,8 @@
  * @brief Defines the Broadcaster to emit events for subscribed systems
  */
 
+#pragma once
+
 #include <cstdint> // for uint32_t 
 #include <functional> // for std::function 
 #include <unordered_map> // for std::unordered_map
@@ -11,9 +13,7 @@
 #include <cassert> // for assert
 #include <type_traits> // for checking if T is a const reference in subscribe and unsubscribe 
 #include <spdlog/spdlog.h> // for error logging 
-
-
-#pragma once
+#include <vector> // for storage
 
 namespace Imago::Engine 
 {

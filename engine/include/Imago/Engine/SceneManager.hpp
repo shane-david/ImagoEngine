@@ -30,7 +30,7 @@ namespace Imago::Engine
         // to build chosen at Runtime but the SceneManager cannot even know what user-defined Scenes even exist at compile time. 
         // To solve this we use factories. register_scene<T> is the one place that the Scene type is known at copile time so it 
         // instantiates create_scene<T> and stores a pointer ot it. The SceneManager can then just call the stored function 
-        // without even having to know what type the Scene it is instantiating is. 
+        // without even having to know what type the Scene it is instantiating is.
 
         /// @brief A function pointer to a function that builds one specific Scene type. One is instantiated per registered type. 
         using SceneFactoryFn = std::unique_ptr<Scene>(*)(const SceneContext&); 

@@ -13,9 +13,11 @@ namespace Imago::Engine
     // destructor
     SceneManager::~SceneManager() 
     {
-        // clean up the active scene if it exists when the SceneManager is destroy
-        if (_active != nullptr) {
-            _active->unload(); 
+        // clean up the live scenes if they exists when the SceneManager is destroyed
+        for (auto& [_, scene] : _scenes) {
+            if (scene) {
+                scene->unload(); 
+            }
         }
     }
 

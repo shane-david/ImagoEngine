@@ -1,6 +1,6 @@
 # ecs tests
 add_executable(ecs_tests
-  Engine/SceneManagerTests.cpp
+  Engine/GameTests.cpp
 )
 
 target_link_libraries(ecs_tests PRIVATE

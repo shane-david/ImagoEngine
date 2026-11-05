@@ -13,6 +13,9 @@
 #include "Imago/Engine/EngineControl.hpp"
 #include "Imago/Engine/SceneContext.hpp"
 #include "Imago/Engine/SceneManager.hpp"
+#include "Imago/Engine/InputHandler.hpp"
+#include "Imago/Engine/InputState.hpp"
+#include "Imago/Engine/InputSource.hpp"
 
 namespace Imago::Engine 
 {
@@ -37,7 +40,7 @@ namespace Imago::Engine
         GameConfig _config; ///< settings the Game was constructed with 
         bool _isRunning = false; ///< whether or not the main game loop should be running 
         sf::RenderWindow _window; ///< the SFML game window
-        //TODO input map and handler 
+        InputHandler _inputHandler; ///< owns the inputs and the InputState
         //TODO AssetManager
         EngineControl _engineControl; ///< records requests for quitting and scene changes from systems
         SceneContext _ctx; ///< root context that is filled in with persistent Engine objects that every Scene copies
@@ -61,8 +64,6 @@ namespace Imago::Engine
 
         /**
          * @brief Drains the SFML window event queue. 
-         * 
-         * Only the close event is handled for now. 
          */
         void poll_events(); 
 
@@ -99,6 +100,16 @@ namespace Imago::Engine
          */
         template <typename T>
         void register_scene(const std::string& name) { _sceneManager.register_scene<T>(name); }
+
+        /**
+         * @brief Registers an action name and returns its id. Forwards to the InputHandler. 
+         * @param name Name of the action to register. 
+         */
+        ActionId register_action(const std::string& name); 
+
+        /// @brief adds a key or mouse button to an action. 
+        void add_input(const std::string& action, sf::Keyboard::Key key); 
+        void add_input(const std::string& action, sf::Mouse::Button button); 
 
         /**
          * @brief Starts config.firstScene and runs the main loop until the game quits. 

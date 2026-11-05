@@ -17,7 +17,7 @@ namespace Imago::Engine
 
             // fill in the context
             _ctx.engine = &_engineControl; 
-            //TODO initialize input
+            _ctx.input = &_inputHandler.state(); 
             //TODO initialize AssetManager
             _ctx.window = &_window; 
 
@@ -72,6 +72,7 @@ namespace Imago::Engine
         }
     }
 
+    //TODO have return a bool 
     void Game::process_requests()
     {
 

@@ -20,6 +20,7 @@ namespace Imago::Engine
     class AssetManager; 
     class Broadcaster; 
     class EngineControl; 
+    class InputState; 
 
     /**
      * @brief Gives systems access to the persisten engine objects they could need. 
@@ -33,7 +34,7 @@ namespace Imago::Engine
         ECS::Nexus* nexus = nullptr; ///< the active Scene's nexus
         Broadcaster* broadcaster = nullptr; ///< the active Scene's broadcaster
         EngineControl* engine = nullptr; ///< how systems send requests to the Game (switch_scene and quit)
-        std::unordered_map<std::string, bool>* input = nullptr; ///< action name -> currently active input map 
+        InputState* input = nullptr; ///< action name -> currently active input map 
         AssetManager* assets = nullptr; ///< the loaded assets, owned by the Game
         sf::RenderWindow* window = nullptr; ///< the render window, owned by the Game 
     }; 

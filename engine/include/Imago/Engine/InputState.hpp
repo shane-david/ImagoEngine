@@ -38,6 +38,7 @@ namespace Imago::Engine
         /// @brief Which kind of system is currently running so that we know which edge flags queries should read. 
         enum class Phase { Frame, Fixed }; 
 
+        /// @brief State of each action, stores its strength and its began/ended state for fixed and frame phases
         struct ActionState {
             float strength = 0.0f; ///< 0 to 1, largest of its inputs. 
             bool held = false; ///< true if strength is above 0
@@ -82,6 +83,21 @@ namespace Imago::Engine
          */
         const ActionState* get(ActionId action) const; 
 
+        /**
+         * @brief Non-const overlaod of InputState::get() so that inner methods that modify the ActionState 
+         * do not have to repeat the verification step. 
+         * @param action The id of the action to get the state for. 
+         * @return ActionState* Pointer to the action state. 
+         */
+        ActionState* get(ActionId action); 
+
+        /**
+         * @brief Looks a name up and resolves whether or not it is registered 
+         * @param name Name to look up 
+         * @return Id of the actoin if it exits, INVALID_ACTION if it does not 
+         */
+        ActionId resolve(const std::string& name) const; 
+
         // --- scheduler hooks, called from SystemScheduler::tick() ---
 
         /// @brief called when per-frame systems are about to run
@@ -116,39 +132,39 @@ namespace Imago::Engine
         // --- user api methods ---
 
         /// @brief returns true while the action is being held down. Overloaded so it can be called with an action's name or id. 
-        bool held(const std::string& action) const; 
         bool held(ActionId action) const; 
+        bool held(const std::string& action) const; 
 
         /// @brief returns true when the action started being held. Overloaded so it can be called with an action's name or id. 
-        bool began(const std::string& action) const; 
         bool began(ActionId action) const; 
+        bool began(const std::string& action) const; 
 
         /// @brief returns true when the action stopped being held. Overloaded so it can be called with an action's name or id. 
-        bool ended(const std::string& action) const; 
         bool ended(ActionId action) const; 
+        bool ended(const std::string& action) const; 
 
         /**
          * @brief returns how much the action is engaged, from 0 to 1. Overloaded so it can be called with an action's name or id.
          * 
-         * Keyboard and mouse only give 0 or 1. If there are multiple bindins the largest one wins. 
+         * Keyboard and mouse only give 0 or 1. If there are multiple inputs the largest one wins. 
          */
-        float strength(const std::string& action) const;
         float strength(ActionId action) const; 
+        float strength(const std::string& action) const;
 
         /**
          * @brief Returns result of a direction from one line of input, opposite inputs of the same strength cancel out. Overloaded so it can be called with an action's name or id. 
          * 
          * strength(positive) - strength(negative)
          */
-        float axis(const std::string& negative, const std::string& positive) const;
         float axis(ActionId negative, ActionId positive) const; 
+        float axis(const std::string& negative, const std::string& positive) const;
 
         /**
          * @brief Returns result of a direction in 2D from four lines of input. Overloaded so it can be called with an action's name or id. 
          * 
          * two axes cobined into a direction with length at most 1, so a keyboard diagonal is not faster. 
          */
+        glm::vec2 direction(ActionId left, ActionId right, ActionId up, ActionId down) const; 
         glm::vec2 direction(const std::string& left, const std::string& right, const std::string& up, const std::string& down) const; 
-        glm::vec2 direction(ActionId left, ActionId right, ActionId up, ActionId down); 
     }; 
 }

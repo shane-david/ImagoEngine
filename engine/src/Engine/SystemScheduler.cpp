@@ -6,6 +6,9 @@
 #include <spdlog/spdlog.h>
 #include <utility>
 
+#include "Imago/Engine/SceneContext.hpp"
+#include "Imago/Engine/InputState.hpp"
+
 namespace Imago::Engine 
 {   
     SystemScheduler::SystemScheduler(SceneContext& ctx) 
@@ -17,15 +20,26 @@ namespace Imago::Engine
         // make sure dt is a valid timestep 
         assert(dt >= 0.0f && "[SystemScheduler] tick called with a negative dt!"); 
 
+        // cache the input state, every hook checks if it is null 
+        InputState* input = _ctx.input; 
+
         // progress the accumulator
         _accumulator += dt; 
 
         // call the fixed systems while there is a step's worth of time in the accumulator and maxSteps has not been reached
         std::uint32_t steps = 0; 
         while (_accumulator >= _fixedTimestep && steps < _maxFixedSteps) {
+
+            // tell the InputState the the fixed step is starting 
+            if (input) input->begin_fixed_step(); 
+
+            // run the fixed step
             for (SystemFn system : _fixedSystems) {
                 system(_ctx, _fixedTimestep); 
             }
+
+            // tell the InputState the the fixes step is over
+            if (input) input->end_fixed_step(); 
 
             // remove a step out of the accumulator and progress steps
             _accumulator -= _fixedTimestep;
@@ -38,6 +52,9 @@ namespace Imago::Engine
             _accumulator = std::fmod(_accumulator, _fixedTimestep); 
         }
 
+        // tell the InputState that the frame systems are starting
+        if (input) input->begin_frame_phase(); 
+
         // call the core systems
         for (SystemFn system : _coreSystems) {
             system(_ctx, dt); 
@@ -47,6 +64,9 @@ namespace Imago::Engine
         for (SystemFn system : _userSystems) {
             system(_ctx, dt); 
         }
+
+        // tell the InputState that the frame systems are ending 
+        if (input) input->end_frame_phase(); 
     }
 
     // methods for adding and removing systems

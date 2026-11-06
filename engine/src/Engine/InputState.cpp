@@ -4,6 +4,7 @@
 #include <spdlog/spdlog.h>
 #include <algorithm>
 #include <glm/geometric.hpp> // for glm::length
+#include <utility> // for the as_const cast
 
 namespace Imago::Engine
 {
@@ -12,7 +13,7 @@ namespace Imago::Engine
     {
         //TODO integrate asserts into logger 
         // ensure the name is not empty 
-        assert(name.empty() && "[InputState] cannot add an action with an empty name!"); 
+        assert(!name.empty() && "[InputState] cannot add an action with an empty name!"); 
 
         // if the name already exists just return its existing id 
         auto it = _ids.find(name); 
@@ -21,7 +22,7 @@ namespace Imago::Engine
         }
 
         // otherwise add the action, get the id (size of actions), store the name, and then push a default ActionState
-        ActionId id = static_cast<uint32_t>(_actions.size()); 
+        ActionId id = static_cast<ActionId>(_actions.size()); 
         _ids[name] = id; 
         _actions.push_back(ActionState()); 
 
@@ -48,10 +49,13 @@ namespace Imago::Engine
         // So, instead the phase tracking decided which query reads, and the hooks decide when each set clears. 
 
         // set began and ended states for both frame and fixed 
-        state->beganFrame = (!wasHeld && state->held); 
-        state->beganFixed = (!wasHeld && state->held); 
-        state->endedFrame = (wasHeld && !state->held); 
-        state->endedFixed = (wasHeld && !state->held); 
+        if (!wasHeld && state->held) {
+            state->beganFrame = true;
+            state->beganFixed = true; 
+        } else if (wasHeld && !state->held) {
+            state->endedFrame = true;
+            state->endedFixed = true; 
+        }
     }
 
     void InputState::clear_edges()
@@ -101,7 +105,7 @@ namespace Imago::Engine
         // if it is INVALID_ACTIon assert/warn 
         assert(id != INVALID_ACTION && "[InputState] invalid ActionId!");
         if (id == INVALID_ACTION) {
-            spdlog::warn("[InputState] invalid ActionId!"); 
+            spdlog::warn("[InputState] invalid ActionId for '{}'!", name); 
         }
 
         return id; 
@@ -183,11 +187,7 @@ namespace Imago::Engine
         if (!state) return false; 
 
         // otherwise return the began flag depending on the current phase 
-        if (_phase == Phase::Frame) {
-            return state->beganFrame; 
-        } else if (_phase == Phase::Fixed) {
-            return state->beganFixed; 
-        }
+        return (_phase == Phase::Fixed) ? state->beganFixed : state->beganFrame; 
     }
 
     bool InputState::began(const std::string& name) const
@@ -207,11 +207,7 @@ namespace Imago::Engine
         if (!state) return false; 
         
         // otherwise return the ended flag depending on the current phase
-        if (_phase == Phase::Frame) {
-            return state->endedFrame; 
-        } else if (_phase == Phase::Fixed) {
-            return state->endedFixed; 
-        }
+        return (_phase == Phase::Fixed) ? state->endedFixed : state->endedFrame; 
     }
 
     bool InputState::ended(const std::string& name) const
@@ -228,7 +224,7 @@ namespace Imago::Engine
     {
         // get the ActionState, if it is null return the default 
         const ActionState* state = get(action); 
-        if (!state) return false; 
+        if (!state) return 0.0f; 
 
         // otherwise return the strength 
         return state->strength; 
@@ -238,7 +234,7 @@ namespace Imago::Engine
     {
         // get the id, if it is INVALID_ACTION, return the default 
         ActionId id = resolve(name);
-        if (id == INVALID_ACTION) return false; 
+        if (id == INVALID_ACTION) return 0.0f; 
 
         // otherwise forward to the id overload 
         return strength(id); 
@@ -254,7 +250,7 @@ namespace Imago::Engine
         // get both ids, if either are INVALID_ACTION, return the default 
         ActionId negId = resolve(negative);
         ActionId posId = resolve(positive); 
-        if (negId == INVALID_ACTION || posId == INVALID_ACTION) return 0; 
+        if (negId == INVALID_ACTION || posId == INVALID_ACTION) return 0.0f; 
 
         // otherwise forward to the id overload
         return axis(negId, posId); 

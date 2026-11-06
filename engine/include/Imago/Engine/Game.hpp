@@ -108,7 +108,7 @@ namespace Imago::Engine
         ActionId register_action(const std::string& name); 
 
         /// @brief adds a key or mouse button to an action. 
-        void add_input(const std::string& action, sf::Keyboard::Key key); 
+        void add_input(const std::string& action, sf::Keyboard::Scancode scancode); 
         void add_input(const std::string& action, sf::Mouse::Button button); 
 
         /**

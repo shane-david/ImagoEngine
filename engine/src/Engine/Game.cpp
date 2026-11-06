@@ -68,23 +68,23 @@ namespace Imago::Engine
                 _engineControl.quit(); 
             }
 
-            //TODO integrate keyboard input polling through SFML 
+            // alert the InputHandler about the event
+            _inputHandler.handle_event(*event); 
         }
     }
 
-    //TODO have return a bool 
     void Game::process_requests()
     {
-
         // if there has been a quit requested, set is running to false 
         if (_engineControl.quit_requested()) {
             _isRunning = false; 
             return; 
         }
 
-        // if there is a valid pending switch, forward it to the sceneManager
+        // if there is a valid pending switch, forward it to the sceneManager and clear the input edges
         if (const std::optional switchRequest = _engineControl.take_switch_request()) {
             _sceneManager.request_switch(switchRequest->name, switchRequest->persist);
+            _inputHandler.clear_edges(); 
             return; 
         }
     }
@@ -98,9 +98,12 @@ namespace Imago::Engine
             return; 
         }
 
-        // start the first scene through the SceneManager, immediatly apply the switch since nothing is yet running
+        // start the first scene through the SceneManager, immediately apply the switch since nothing is yet running
         _sceneManager.request_switch(_config.firstScene, false); 
         _sceneManager.apply_pending_switch(); 
+
+        // get rid of any input that could have been happening before the first scene was initialized 
+        _inputHandler.clear_edges(); 
 
         // create the SFML clock so that we can set the dt in the isRunning loop
         // intentionally created after the first scene so it does not contain the first scene's load time
@@ -141,5 +144,22 @@ namespace Imago::Engine
             //TODO rendering system
             _window.display(); 
         }
+    }
+
+    // --- forwards ---
+
+    ActionId Game::register_action(const std::string& name)
+    {
+        return _inputHandler.register_action(name); 
+    }
+
+    void Game::add_input(const std::string& name, sf::Keyboard::Scancode scancode) 
+    {
+        _inputHandler.add_input(name, scancode); 
+    }
+
+    void Game::add_input(const std::string& name, sf::Mouse::Button button) 
+    {
+        _inputHandler.add_input(name, button); 
     }
 }

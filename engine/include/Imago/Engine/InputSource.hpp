@@ -13,7 +13,7 @@
 namespace Imago::Engine 
 {
     /// @brief A keybaord key that drives an action. Reads as 0 or 1. (pressed or not pressed)
-    struct KeySource { sf::Keyboard::Key key; }; 
+    struct KeySource { sf::Keyboard::Scancode scancode; }; 
 
     /// @brief A mouse button that drives an action. Reads as 0 or 1. (pressed or not pressed)
     struct MouseButtonSource { sf::Mouse::Button button; }; 
@@ -23,7 +23,7 @@ namespace Imago::Engine
     // NOTE: std::variant's == operator is used by the InputHandler to find matching inputs. It only exists if every alternative 
     // of the variant has its own == operator. The variant compares the held type first, so a KeySource never equals a MouseButtonSource.
 
-    constexpr bool operator==(const KeySource& a, const KeySource& b) { return a.key == b.key; }
+    constexpr bool operator==(const KeySource& a, const KeySource& b) { return a.scancode == b.scancode; }
     constexpr bool operator!=(const KeySource& a, const KeySource& b) { return !(a==b); }
 
     constexpr bool operator==(const MouseButtonSource& a, const MouseButtonSource& b) { return a.button == b.button; }

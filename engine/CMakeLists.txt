@@ -9,6 +9,8 @@ add_library(ImagoEngineCore
     src/Engine/SceneManager.cpp
     src/Engine/EngineControl.cpp
     src/Engine/Game.cpp
+    src/Engine/InputState.cpp
+    src/Engine/InputHandler.cpp
 )
 
 target_compile_options(ImagoEngineCore PRIVATE -Wall -Wextra)

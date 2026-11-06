@@ -44,9 +44,9 @@ namespace Imago::Engine
         void set_source_down(const InputSource& source, bool down); 
 
         /**
-         * @brief Recomputes an action's strength from its inputsand writes to its state. 
+         * @brief Recomputes an action's strength from its inputs and writes to its state. 
          */
-        void refresh_actions(ActionId action); 
+        void refresh_action(ActionId action); 
 
         /**
          * @brief Releases every input, used on focus loss. 
@@ -73,10 +73,10 @@ namespace Imago::Engine
         ActionId register_action(const std::string& name); 
 
         /// @brief Adds a raw input to an action. Overloaded so callers can call with action name or action id and InputSource wrapper or SFML object. 
-        void add_input(const std::string& action, const InputSource& source); 
         void add_input(ActionId action, const InputSource& source); 
-        void add_input(const std::string& action, sf::Keyboard::Key key); 
-        void add_input(const std::string& action, sf::Mouse::Button button); 
+        void add_input(const std::string& name, const InputSource& source); 
+        void add_input(const std::string& name, sf::Keyboard::Scancode scancode); 
+        void add_input(const std::string& name, sf::Mouse::Button button); 
 
         //TODO remove_input once there is a rebinding menu 
 

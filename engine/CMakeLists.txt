@@ -26,3 +26,5 @@ target_link_libraries(ImagoEngineCore PUBLIC
     SFML::Window
     SFML::System
 )
+
+target_link_libraries(ImagoEngineCore PRIVATE SDL2::SDL2)

@@ -31,8 +31,13 @@ namespace Imago::Engine
 
     // --- action state setters  ---
 
-    void InputState::set_strength(ActionId action, float strength)
+    void InputState::set_state(ActionId action, float strength, bool held)
     {
+        //TODO: integrate assert into logger
+
+        // ensure that there was not a strenght of 0 passed in with a held state of true
+        assert(!(held && strength <= 0.0f) && "[InputState] held connaot be true with no strength!"); 
+        
         // if the id is valid, get its corresponding ActionState
         ActionState* state = get(action); 
         if (!state) return; 
@@ -41,9 +46,9 @@ namespace Imago::Engine
         strength = std::clamp(strength, 0.0f, 1.0f); 
         state->strength = strength; 
 
-        // store the old held result and update the new one based on strength
+        // store the old held result and update the new one based on the passed in param
         bool wasHeld = state->held; 
-        state->held = (strength > 0); 
+        state->held = held; 
 
         // NOTE: here we set edges for both frame and fixed because the state does not know which kind of system will read next.
         // So, instead the phase tracking decided which query reads, and the hooks decide when each set clears. 

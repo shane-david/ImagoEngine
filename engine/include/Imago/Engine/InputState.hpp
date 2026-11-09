@@ -67,8 +67,9 @@ namespace Imago::Engine
          * @brief Set an action's strength, derives held, and the latches began/ended edges when held changes. 
          * @param action The action to set the strength for. 
          * @param strength The value to insert as the action's strength. 
+         * @param held Whether or not the input is past its own threshold 
          */
-        void set_strength(ActionId action, float strength); 
+        void set_state(ActionId action, float strength, bool held); 
 
         /**
          * @brief Clears every latched edge but leaves held and strength alone. 
@@ -120,7 +121,7 @@ namespace Imago::Engine
         // explicity disallow copy and move behavior
         InputState(const InputState&) = delete; 
         InputState& operator=(const InputState&) = delete;
-        InputState(const InputState&&) = delete;
+        InputState(InputState&&) = delete;
         InputState& operator=(InputState&&) = delete; 
 
         /**

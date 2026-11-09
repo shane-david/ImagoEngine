@@ -38,7 +38,7 @@ namespace Imago::Engine
 {
     struct InputStateTestAccess {
         static ActionId add_action(InputState& s, const std::string& name) { return s.add_action(name); }
-        static void set_strength(InputState& s, ActionId action, float value) { s.set_strength(action, value); }
+        static void set_strength(InputState& s, ActionId action, float value) { s.set_state(action, value, value > 0.0f); }
         static void clear_edges(InputState& s) { s.clear_edges(); }
         static void begin_frame_phase(InputState& s) { s.begin_frame_phase(); }
         static void end_frame_phase(InputState& s) { s.end_frame_phase(); }

@@ -26,11 +26,16 @@ namespace Imago::Engine
     class InputHandler {
     private:
         
-        /// @brief One raw input added to an action and whether or not it is currently down.
+        //TODO have different vectors for differnt entries to get rid of the InputSource variant and unecessary data for non-axis inputs. 
+
+        /// @brief One raw input added to an action, whether or not it is currently down, its magnitude value, and data for axes dead zones and thresholds. 
         struct SourceEntry {
             InputSource source; ///< the raw input
             ActionId action; ///< the action the input drives
-            bool down = false; ///< current state of the raw input 
+            bool down = false; ///< current digital state of the raw input 
+            float value = 0.0f; ///< current analog magnitude (0-1) of the input. Drives strength
+            float deadZone = 0.0f; ///< how much axis travel nearest the center counts as not moved. Everything past it is rescaled to 0-1. Key/Mouse defualt -> axes provide their own.
+            float threshold = 0.5f; ///< minimum magnitude axis needs to be pressed before it counts as being down. Key/Mouse default -> axes provide their own. 
         }; 
 
         InputState _state; ///< action names and states, what systems query through SceneContext
@@ -39,12 +44,15 @@ namespace Imago::Engine
         // --- private methods --- 
 
         /**
-         * @brief Sets the down flag on every entry matching a source, then recomputes the affected actions. 
+         * @brief Takes magnitude of an input and peforms dead zone, thershold, and hysterisis math to set the value accordingly determine whether or not it is down. 
+         * @param source InputSource to set the value of 
+         * @param magnitude magnitude of that input
          */
-        void set_source_down(const InputSource& source, bool down); 
+        void set_source_value(const InputSource& source, float magnitude); 
 
         /**
-         * @brief Recomputes an action's strength from its inputs and writes to its state. 
+         * @brief Recomputes an action's strength based off its analog value and its held state based off its down digital value
+         * and then sets those to the corresponding ActionState in _state.
          */
         void refresh_action(ActionId action); 
 
@@ -61,7 +69,7 @@ namespace Imago::Engine
         // explicitly disallow copy behavior
         InputHandler(const InputHandler&) = delete; 
         InputHandler& operator=(const InputHandler&) = delete;
-        InputHandler(const InputHandler&&) = delete;
+        InputHandler(InputHandler&&) = delete;
         InputHandler& operator=(InputHandler&&) = delete; 
 
         /**
@@ -73,10 +81,12 @@ namespace Imago::Engine
         ActionId register_action(const std::string& name); 
 
         /// @brief Adds a raw input to an action. Overloaded so callers can call with action name or action id and InputSource wrapper or SFML object. 
-        void add_input(ActionId action, const InputSource& source); 
-        void add_input(const std::string& name, const InputSource& source); 
+        void add_input(ActionId action, const InputSource& source, float deadZone = 0.0f, float threshold = 0.5f); 
+        void add_input(const std::string& name, const InputSource& source, float deadZone = 0.0f, float threshold = 0.5f); 
         void add_input(const std::string& name, sf::Keyboard::Scancode scancode); 
         void add_input(const std::string& name, sf::Mouse::Button button); 
+        void add_input(const std::string& name, GamepadButton button);
+        void add_input(const std::string& name, GamepadAxis axis, float deadZone = 0.2f, float threshold = 0.5f); 
 
         //TODO remove_input once there is a rebinding menu 
 
@@ -88,6 +98,27 @@ namespace Imago::Engine
          * @param event The SFML event
          */
         void handle_event(const sf::Event& event); 
+
+        /**
+         * @brief Handles a Gamepad button event. Called by Game which determines what button the event is associated with, 
+         * and what state it is in. 
+         * @param button The Gamepad button - turned from an SDL2 enum to an Imago enum by Game.
+         * @param down whether or not the button is down
+         */
+        void handle_gamepad_button(GamepadButton button, bool down);
+
+        /**
+         * @brief Handles a Gamepad axis event. Called by Game which determines which axis had motion 
+         * and what the magnitude of that motion was. 
+         * @param axis The Gamepad axis that had motion - turned from an SDL2 enum to an Imago enum by Game. 
+         * @param magnitude the magnitude of that motion for that axis. 
+         */
+        void handle_gamepad_axis(GamepadAxis axis, float magnitude); 
+
+        /**
+         * @brief Releases all Gamepad inputs, called by Game when a controller is disconnected. 
+         */
+        void release_gamepad_inputs(); 
 
         /**
          * @brief Clears latched edges, keeps held state. Game calls this after a scene switch. 

@@ -9,6 +9,8 @@ add_library(ImagoEngineCore
     src/Engine/SceneManager.cpp
     src/Engine/EngineControl.cpp
     src/Engine/Game.cpp
+    src/Engine/InputState.cpp
+    src/Engine/InputHandler.cpp
 )
 
 target_compile_options(ImagoEngineCore PRIVATE -Wall -Wextra)
@@ -24,3 +26,5 @@ target_link_libraries(ImagoEngineCore PUBLIC
     SFML::Window
     SFML::System
 )
+
+target_link_libraries(ImagoEngineCore PRIVATE SDL2::SDL2)

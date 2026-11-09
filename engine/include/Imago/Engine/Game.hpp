@@ -8,11 +8,18 @@
 
 #include <string> 
 #include <SFML/Graphics/RenderWindow.hpp> // for the window lifetime and rendering
+#include <cstdint> // for int32_t
 
 #include "Imago/Engine/GameConfig.hpp"
 #include "Imago/Engine/EngineControl.hpp"
 #include "Imago/Engine/SceneContext.hpp"
 #include "Imago/Engine/SceneManager.hpp"
+#include "Imago/Engine/InputHandler.hpp"
+#include "Imago/Engine/InputState.hpp"
+#include "Imago/Engine/InputSource.hpp"
+
+// SDL forward declaration, SDL is a C library so this lives at a global scope 
+struct _SDL_GameController; 
 
 namespace Imago::Engine 
 {
@@ -37,8 +44,12 @@ namespace Imago::Engine
         GameConfig _config; ///< settings the Game was constructed with 
         bool _isRunning = false; ///< whether or not the main game loop should be running 
         sf::RenderWindow _window; ///< the SFML game window
-        //TODO input map and handler 
+        bool _hasFocus = true; ///< window focus from SFML, gates gamepad event forwarding 
+        InputHandler _inputHandler; ///< owns the inputs and the InputState
         //TODO AssetManager
+        bool _gamepadReady = false; ///< false when SDL_Init failed -> the SDL event poll is skipped
+        _SDL_GameController* _controller = nullptr; ///< open controller, null when there is none connected
+        int32_t _controllerId = -1; ///< SDL instance id of _controller, -1 when there is none connected 
         EngineControl _engineControl; ///< records requests for quitting and scene changes from systems
         SceneContext _ctx; ///< root context that is filled in with persistent Engine objects that every Scene copies
         SceneManager _sceneManager; ///< owns and switches Scenes 
@@ -61,10 +72,13 @@ namespace Imago::Engine
 
         /**
          * @brief Drains the SFML window event queue. 
-         * 
-         * Only the close event is handled for now. 
          */
         void poll_events(); 
+
+        /**
+         * @brief Drains the SDL gamepad event queue, guarded by _gamepadReady
+         */
+        void poll_gamepad_events(); 
 
         /**
          * @brief Reads EngineControls current requests. 
@@ -75,6 +89,24 @@ namespace Imago::Engine
          */
         void process_requests(); 
 
+        // --- controller dis/connecting ---
+
+        /**
+         * @brief Tries to open the controller at the specified index and returns whether or not it was successfully opened (a controller was at that index)
+         */
+        bool try_open_controller(int index); 
+
+        /**
+         * @brief Closes the current controller by clearing the controller members, then releases its inputs
+         */
+        void close_controller(); 
+
+        /**
+         * @brief Scans for an open controller and opens the first it finds 
+         */
+        void adopt_any_controller(); 
+
+
     public:
         
         /**
@@ -83,8 +115,10 @@ namespace Imago::Engine
          */
         explicit Game(const GameConfig& config); 
 
-        // default destructor
-        ~Game() = default; 
+        /**
+         * @brief closes any controllers and quits SDL
+         */
+        ~Game(); 
 
         // explicitly disallow copy and move behavior
         Game(const Game&) = delete;
@@ -99,6 +133,26 @@ namespace Imago::Engine
          */
         template <typename T>
         void register_scene(const std::string& name) { _sceneManager.register_scene<T>(name); }
+
+        /**
+         * @brief Registers an action name and returns its id. Forwards to the InputHandler. 
+         * @param name Name of the action to register. 
+         */
+        ActionId register_action(const std::string& name); 
+
+        /// @brief adds a key press, mouse button, or gamepad button to an action. 
+        void add_input(const std::string& action, sf::Keyboard::Scancode scancode); 
+        void add_input(const std::string& action, sf::Mouse::Button button); 
+        void add_input(const std::string& action, GamepadButton button); 
+
+        /**
+         * @brief adds a gamepad axis to an action. dead zone and threshold values are defualted to fit standard player movement. 
+         * @param deadZone how much axis travel nearest the center counts as not moved. Everything past it is rescaled to 0-1. Defaulted to 0.2f
+         * @param threshold minimum magnitude axis needs to be pressed before it counts as being down. Defualted to 0.5f
+         */
+        void add_input(const std::string& action, GamepadAxis axis, float deadZone = 0.2f, float threshold = 0.5f); 
+
+
 
         /**
          * @brief Starts config.firstScene and runs the main loop until the game quits. 

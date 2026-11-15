@@ -18,7 +18,7 @@
 namespace Imago::Engine 
 {
 
-    //NOTE: this will be defined later and for now is just a forward declaration so that it can be used in the function signatures
+    //forward declaration so that it can be used in the function signatures
     struct SceneContext; 
 
     /// @brief Alias for event ids in event storage 
@@ -84,8 +84,8 @@ namespace Imago::Engine
         SceneContext& _ctx; ///< reference to the SceneContext that will be passed to all subscribed systems
         std::unordered_map<EventTypeId, std::vector<Subscriber>> _subscribers; ///< map of Events to the subscribers to that event 
 
-        //NOTE: this variable exists so we can keep track of how many broadcasts emit has made 
-        //and not subscribe or unsubscribe from any systems during an emit
+        // NOTE: this variable exists so we can keep track of how many broadcasts emit has made 
+        // and not subscribe or unsubscribe from any systems during an emit
 
         uint32_t _broadcastDepth; ///< counter for how many broadcasts emit is making
 
@@ -115,9 +115,11 @@ namespace Imago::Engine
          */
         explicit Broadcaster(SceneContext& ctx); 
 
-        // explicitly disallow copy behavior
+        // explicitly disallow copy and move behavior
         Broadcaster(const Broadcaster&) = delete;
         Broadcaster& operator=(const Broadcaster&) = delete; 
+        Broadcaster(Broadcaster&&) = delete;
+        Broadcaster& operator=(Broadcaster&&) = delete;
 
         /**
          * @brief Call every system subscribed to EventType T in subcription order. 
@@ -134,13 +136,13 @@ namespace Imago::Engine
         /**
          * @brief Adds the system function pointer to the list for EventType T. Called during scene initialization. 
          * @tparam The Event to subscribe to 
-         * @param system The functin pointer to the system that is subscribing. 
+         * @param system The function pointer to the system that is subscribing. 
          */
         template <typename T>
         void subscribe(SystemFn<T> system); 
 
         /**
-         * @brief Removes the system functinp pointer from the list for EventType T.
+         * @brief Removes the system function pointer from the list for EventType T.
          * 
          * This preserves the order of the remaining subscribers. It finds the specific system to unsubscribe from 
          * by comparing the ErasedFn address to the one's of those in the event list. 
@@ -152,7 +154,7 @@ namespace Imago::Engine
         void unsubscribe(SystemFn<T> system); 
 
         /**
-         * @brief Drops every subscriptoin for every event type. 
+         * @brief Drops every subscription for every event type. 
          */
         void clear(); 
 
@@ -175,7 +177,7 @@ namespace Imago::Engine
         // if we are here it was found so get a reference
         std::vector<Subscriber>& subscribers = it->second; 
 
-        // iterate though it calling the lambgas and keeping track of broadcast depth accordingly 
+        // iterate though it calling the lambas and keeping track of broadcast depth accordingly 
         _broadcastDepth++; 
         for (const Subscriber& subscriber : subscribers) {
             subscriber.invoke(_ctx, &event);
@@ -200,18 +202,18 @@ namespace Imago::Engine
         // get the id of the event being subscribe dto
         EventTypeId id = get_event_type_id<T>(); 
 
-        // create or get the vector the matches with id 
+        // create or get the vector that matches with id 
         std::vector<Subscriber>& subscribers = _subscribers[id]; 
 
-        //NOTE: in c++ reinterpret_cast<T>() tells the compiler to treat the same bits as a different type with no conversion and no checking 
+        // NOTE: in C++ reinterpret_cast<T>() tells the compiler to treat the same bits as a different type with no conversion and no checking 
         // in this case, since we are casting function pointers the address (which is what we want) will stay the same and the type the compiler associates
         // with it will change so we can store all system addresses in the same vector. 
 
-        // convert the system to ErasedFn to store its address and make sure that system is not alreayd in the vector 
+        // convert the system to ErasedFn to store its address and make sure that system is not already in the vector 
         ErasedFn erasedSystem = reinterpret_cast<ErasedFn>(system);
         if (find_subscriber(subscribers, erasedSystem) != subscribers.end()) return; 
 
-        // buld the Subscriber wrapper and add it the _subscribers
+        // buld the Subscriber wrapper and add it to _subscribers
         Subscriber subscriber = {
             erasedSystem, 
             [system](SceneContext& ctx, const void* event) {

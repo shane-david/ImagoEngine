@@ -4,9 +4,9 @@
  * @brief Defines the Entity alias and the free functions used to pack and unpack it
  * 
  * An Entity is a lightweight identifier, a single packed uint32_t containing both an
- * index (which slot this entity occupies) and a generation (how many times that slot
+ * index (which slot this entity occupies), and a generation (how many times that slot
  * has been destroyed and recreated). Entities carry no data and no behavior; they are
- * pure IDs used to look up components in the ECS's component pools.
+ * pure IDs used to look up components in component pools.
  */
 # pragma once 
 
@@ -16,7 +16,7 @@
 namespace Imago::ECS 
 {
 
-    /// @brief  A packed identifier: 20 bits of index, 12 bits of generation
+    /// @brief A packed identifier: 20 bits of index, 12 bits of generation
     using Entity = uint32_t;
 
     // NOTE: for these variables, constexpr means that the variable is locked to its set value at compile time 
@@ -38,7 +38,7 @@ namespace Imago::ECS
      * Decodes to index == ENTITY_INDEX_MASK and generation == ENTITY_GENERATION_MASK,
      * a bit pattern EntityManager never hands out as a real, live Entity. 
      */
-    constexpr Entity NULL_ENTITY = 0xFFFFFFFFu;   // bits used to represent a null entitty 
+    constexpr Entity NULL_ENTITY = 0xFFFFFFFFu; 
 
     // NOTE: for these free functions, constexpr means that if every argument is known at compile time the compiler can simply 
     // run this function during compilation and bake in the result, meaning the value cannot be reassigned, and if every argument

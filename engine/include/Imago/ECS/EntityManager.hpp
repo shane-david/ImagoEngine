@@ -1,6 +1,7 @@
 /**
  *  @file EntityManager.hpp
- *  @brief Owns the lifetime of every Entity in the engine, it creates, destroys, and valildates every entity. Handles recyclying freed indices by bumping their generation to invalidate stale Entity handles. 
+ *  @brief Owns the lifetime of every Entity in the engine, it creates, destroys, and valildates every entity. 
+ *  and andles recyclying freed indices by bumping their generation to invalidate stale Entity handles. 
  */
 # pragma once 
 
@@ -8,7 +9,7 @@
 #include <vector>  // for holding the Entity generations
 #include <queue>   // for holding free indices
 
-#include "Imago/ECS/Entity.hpp" // for Entity alias and bitwise math
+#include "Imago/ECS/Entity.hpp"
 
 
 namespace Imago::ECS 
@@ -46,7 +47,6 @@ namespace Imago::ECS
         /**
          * @brief Creates a new Entity, reusing a freed index when one is available.
          * @return A newly valid Entity handle.
-         * @complexity O(1)
          * @warning Not thread-safe.
          */
         Entity create();
@@ -59,7 +59,6 @@ namespace Imago::ECS
          *
          * @param entity The Entity to destroy.
          * @note Destroying an already-invalid Entity is a safe no-op, not an error.
-         * @complexity O(1)
          */
         void destroy(Entity); 
 
@@ -71,15 +70,12 @@ namespace Imago::ECS
          *
          * @param entity The Entity to check. Safe to call with any value, including NULL_ENTITY.
          * @return true if the entity is currently alive.
-         * @complexity O(1)
          */
         bool is_valid(Entity) const; 
 
         /**
          * @brief Returns the number of currently-alive entities.
-         * @complexity O(1)
          */
         uint32_t get_alive_count() const { return static_cast<uint32_t>(_generations.size() - _freeIndices.size()); }; 
-
     }; 
 }

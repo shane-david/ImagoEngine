@@ -31,17 +31,17 @@ namespace Imago::ECS
     using ComponentTypeId = uint32_t; 
 
     // NOTE: Here we use the Meyer's Singleton:
-    // the detail namespace contains a function for getting the next id, the first line only runs once because it is a static loca variable 
+    // the detail namespace contains a function for getting the next id, the first line only runs once because it is a static local variable 
     // and hence the memory is only allocated once, the return statement returns the id and then increments it for every call so that we get a new, sequential id every call 
     // after it is a templated function that returns the id for each component type. Since it is templated a new version of this function is compiled for each type passed through
     // meaning that the static id variable is assigned only once for each component type and that specific id is returned whenever the function for that component type is called. 
-    // This allows us to to match component types to their corresponding id dynamically and without the compiler having to mange one persisten id slot per type 
+    // This allows us to to match component types to their corresponding id dynamically and without the compiler having to manage one persistent id slot per type. 
 
     /// @internal
     namespace detail 
     {
         /**
-         * @brief Returns the next sequential ComponentTypeId, starting at 0. 
+         * @brief Returns the next sequential ComponentTypeId, starting at 0 
          * 
          * Backed by a single static counter shared across every call, regardless of caller. 
          * This should not be called directly. GetComponentTypeId<T>() should be used instead to ensure
@@ -73,11 +73,11 @@ namespace Imago::ECS
     }
 
     /**
-     * @brief the Nexus is the brain of the ECS world. It is where the user will 
-     * interact with everything ECS related in systems. 
+     * @brief the Nexus is the brain of the ECS world. It is the object the user will use to
+     * interact with everything ECS related within systems. 
      * 
      * It handles:
-     * - creating/destorying entities
+     * - creating/destroying entities
      * - binding/unbinding components
      * - returning and creating bonds and surveys 
      */
@@ -90,8 +90,10 @@ namespace Imago::ECS
         std::vector<std::unique_ptr<Bond>> _bonds; ///< vector of all created bonds as unique pointers because the Nexus owns their entire lifetime 
         std::unordered_map<ComponentTypeId, Bond*> _bondMap; ///< map from component types to bonds to tell us what bonds are associated with what component types, raw pointer because bonds are owned in _bonds
         
+        // --- component pool helpers --- 
+
         /**
-         * @brief Returns the pool of the component type T. 
+         * @brief Returns the pool of the component type T
          * 
          * If the pool does not exist it creates the pool and returns the new one. 
          * 
@@ -103,36 +105,49 @@ namespace Imago::ECS
 
         /**
          * @brief Tries to return the pool of component type T.
-         * @tparam T T The component pool to look for.
+         * @tparam T The component pool to look for.
          * @return Pointer to the component pool if it exists. 
          * @return nullptr if the component pool does not exist. 
          */
         template <typename T>
         SparseSet<T>* find_pool(); 
 
+        // --- immediate calls for CommandBuffer ---
+
         /**
-         * @brief performs an Entity's destruction immediately instead of routing through the command buffer
+         * @brief Performs an Entity's destruction immediately instead of routing through the command buffer
          * @param e The entity to destroy
          */
         void destroy_immediate(Entity e); 
 
         /**
-         * @brief performs a bind on an Entity immediately instead of routing through the command buffer
-         * @tparam The component type to be bound
+         * @brief Performs a bind on an Entity immediately instead of routing through the command buffer
+         * @tparam T The component type to be bound
          * @param e The entity to bind the component to
-         * @param component The comonent data
+         * @param component The component data
          */
         template <typename T>
         void bind_immediate(Entity e, T component); 
 
         /**
-         * @brief performs an unbind on an Entity immediately instead of routing through the command buffer
-         * @tparam The component type to be unbound
-         * @param e The entity whose coomponent of type T is being unbound 
+         * @brief Performs an unbind on an Entity immediately instead of routing through the command buffer
+         * @tparam T The component type to be unbound
+         * @param e The entity whose component of type T is being unbound 
          */
         template <typename T>
         void unbind_immediate(Entity e); 
 
+        // --- bond helpers --- 
+
+        /**
+         * @brief Tries to find a bond matching component type T
+         * 
+         * Returns nullptr if one does not exists, requires a null check
+         * 
+         * @tparam T The component type associated with the bond
+         * @return Raw pointer to the bond if one exists
+         * @return nullptr if one does not exist
+         */
         template <typename T>
         Bond* find_bond(); 
 
@@ -146,13 +161,13 @@ namespace Imago::ECS
          */
         Nexus(); 
 
-        // explicitly disallow copy behavior
+        // explicitly disallow copy and move behavior
         Nexus(const Nexus&) = delete; 
         Nexus& operator=(const Nexus&) = delete; 
+        Nexus(Nexus&&) = delete; 
+        Nexus& operator=(Nexus&&) = delete;
 
-        //-------------------------
-        //Entity/Component Methods
-        //-------------------------
+        // --- entity and component methods ---
 
         /**
          * @brief Creates a new Entity
@@ -162,36 +177,35 @@ namespace Imago::ECS
 
         /**
          * @brief Destroys an Entity and removes it from every component pool it is in.
+         * 
+         * This is a structual change so it is automatically routed to the command buffer and the change is actually made 
+         * in destroy_immediate at the end of the current frame.
+         * 
          * @param e The Entity to destroy
          */
         void destroy(Entity e); 
 
         /**
          * @brief Checks whether an Entity is still valid
-         * 
-         * This is a structual change so it is automatically routed to the command buffer and the change is actually made 
-         * in destroy_immediate at the end of the current frame.
-         * 
          * @param e The Entity to check
-         * @return true if the Entity is valid
-         * @return false if the Entity is not valid
+         * @return whether or not the Entity is valid
          */
         bool is_valid(Entity e) const; 
 
         /**
          * @brief Binds a component of type T to Entity e
          * 
-         * Bind<T>(e, component) creates or fetches a pool for component type T depending on if it already exists or not. 
-         * Binding a component to an Entity that already has that component will flag a warning and do nothing,
+         * - Bind<T>(e, component) creates or fetches a pool for component type T depending on if it already exists or not. 
+         * 
+         * - Binding a component to an Entity that already has that component will flag a warning and do nothing,
          * replacing component data must be done through Patch<T>()
          * 
-         * This is a structual change so it is automatically routed to the command buffer and the change is actually made 
+         * - This is a structual change so it is automatically routed to the command buffer and the change is actually made 
          * in bind_immediate at the end of the current frame.
          * 
          * @tparam T The component type to bind.
          * @param e The entity to bind the component to.
          * @param component The actual component data to bind
-         * @return A reference to the component 
          */
         template <typename T>
         void bind(Entity e, T component); 
@@ -209,14 +223,13 @@ namespace Imago::ECS
         void unbind(Entity e); 
 
         /**
-         * @brief Overwrites an Entity's existing component of type T with new component data, 
+         * @brief Overwrites an Entity's existing component of type T with new component data
          * 
-         * The Entity must already have this component bound. See Bind<T>() for adding a brand new component. 
+         * The Entity must already have this component bound. See Bind<T>() for adding a brand new component
          * 
          * @tparam T The component type to patch.
          * @param e The Entity whose component to patch. 
          * @param component The actual new component data. 
-         * @return A reference to the updated component. 
          */
         template <typename T>
         void patch(Entity e, T component); 
@@ -226,21 +239,20 @@ namespace Imago::ECS
          *  
          * Get<T>(e) assumes e has that component type and should be used only 
          * in Surveys/Bonds where the entity is already guaranteed to have that component.
-         * See, try_to_get<T>(e) for a safer version.
+         * See try_to_get<T>(e) for a safer version
          * 
-         * @tparam T The component type to return.
-         * @param e The entity whose component to return.
-         * @return Reference to the Entity's component. 
+         * @tparam T The component type to return
+         * @param e The entity whose component to return
          */
         template <typename T>
         T& get(Entity e); 
 
         /**
          * @brief Returns a reference to the Entity's component of type T if it has it and nullptr otherwise. 
-         * @tparam T The component type to retur.
-         * @param e The Entity whose component to return. 
+         * @tparam T The component type to return
+         * @param e The Entity whose component to return
          * @return Pointer to the component if the Entity has the component
-         * @return nullptr if the Entity does not have the component.
+         * @return nullptr if the Entity does not have the component
          */
         template <typename T>
         T* try_to_get(Entity e); 
@@ -249,15 +261,12 @@ namespace Imago::ECS
          * @brief Check whether an Entity currently has a component of type T.
          * @tparam T The component type to check for. 
          * @param e The Entity to check for the component. 
-         * @return true if the Entity has the component. 
-         * @return false if the Entity does not have the component. 
+         * @return Whether or not the Entity has the component
          */
         template <typename T>
         bool has(Entity e); 
 
-        //-------------------
-        //Survey/Bond methods
-        //-------------------
+        // -- survey and bond methods ---
 
         /**
          * @brief Returns a survey of the specified components
@@ -269,8 +278,10 @@ namespace Imago::ECS
         SurveyHandle<Components...> survey(); 
 
         /**
-         * @brief Returns a BondHandle (a view of the Bond) if one already exists for the components 
-         * and creates one if possible and returns the view if one does not already exist. 
+         * @brief Does one of three things depending on the current state of Bonds already in the Nexus:
+         * - Returns a BondHandle (a view of the Bond) if one already exists for the components
+         * - Creates a Bond if possible for those components and returns its BondHandle
+         * - Asserts in debug or std::aborts in release if a Bond cannot be created for those component types
          * 
          * @tparam Components to Bond
          * @return The BondHandle of bonded components
@@ -283,7 +294,7 @@ namespace Imago::ECS
         //-----------------------
 
         /**
-         * @brief calls _commandBuffer.flush() to call the immediate methods that actually apply the deferred changes in the CommandBuffer
+         * @brief calls _commandBuffer.flush() to call the immediate methods that actually apply the deferred changes that the CommandBuffer is storing
          */
         void flush(); 
 
@@ -474,13 +485,13 @@ namespace Imago::ECS
 
                 found = location->second; 
 
-            // if found is not associated with the currend id's bond it is not the sameBond
+            // if found is not associated with the current id's bond it is not the sameBond
             } else if (found != location->second) {
                 sameBond = false; 
             }
         }
 
-        // if none of hte ids belong to a bond we can create a new one 
+        // if none of the ids belong to a bond we can create a new one 
         if (mapped == 0) {
 
             // get the pools requested for the bond
@@ -526,7 +537,7 @@ namespace Imago::ECS
     {
         // create and push back the lambda for a bind command
         _bindQueue.push_back([this, e, component]() {
-            _nexus.bind_immediate<T>(e, std::move(component)); 
+            _nexus.bind_immediate<T>(e, component); 
         }); 
     }
 

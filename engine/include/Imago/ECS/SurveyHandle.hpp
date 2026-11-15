@@ -1,5 +1,5 @@
 /**
- * @file Survey.hpp
+ * @file SurveyHandle.hpp
  * @author Shane David
  * @brief Defines the Survey, how the users will iterate over Entities with specified components in Systems. 
  */
@@ -12,7 +12,7 @@
 #include "Imago/ECS/Entity.hpp"
 #include "Imago/ECS/SparseSetBase.hpp"
 
-// Note: Survey and Bonds will contain in class method definitions opposed to the style and structure of most ImagoECS classes, this is to avoid confusing 
+// Note: SurveyHandle and BondHandle will contain in class method definitions opposed to the style and structure of most ImagoECS classes, this is to avoid confusing 
 // and noise with out of class definitions for a nested class 
 
 namespace Imago::ECS 
@@ -21,7 +21,7 @@ namespace Imago::ECS
     // Note: SurveyHandle<Components...> can take any number of component types. This is using a C++ variadic template parameter pack
 
     /**
-     * @brief The Survey takes Componets as templated arguments and acts as an iterator over all entities with all component types
+     * @brief The Survey takes Components as templated arguments and acts as an iterator over all entities with all component types
      * 
      * Survey defines an Iterator inner class so that iterating with for loops is safe. As it iterates it skips over any
      * index that represents an Entity that is not in every single component pool. 
@@ -34,7 +34,7 @@ namespace Imago::ECS
         
         // Note: we are using an array here instead of a vector because the count of components and hence the size of the _pools array will be known at compile time
 
-        std::array<SparseSetBase*, sizeof...(Components)> _pools; ///< _pools the Survey is finding Entities for
+        std::array<SparseSetBase*, sizeof...(Components)> _pools; ///< pools the Survey is finding Entities for
         SparseSetBase* _smallestPool; ///< the smallest of the pools being surveyed 
 
     public: 
@@ -42,11 +42,10 @@ namespace Imago::ECS
         // Note: The explicit keyword here prevents the compiler from converting std::array<SparseSetBase*, N> to a Survey 
         // which C++ allows for under normal circumstances since that is the only element being passed into the constructor
 
-
         /**
          * @brief Constructs a new Survey object by defining _pools and iterating through them to find the smallest pool
          * 
-         * Will only be called by the Nexus where the nexus will send pointers to the pools that it owns. 
+         * Will only be called by the Nexus where the Nexus will send pointers to the pools that it owns. 
          * 
          * @param pools the array of SparseSetBase* that makes up the pools for the particular Survey. 
          */

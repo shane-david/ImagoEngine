@@ -13,18 +13,19 @@
 
 namespace Imago::ECS 
 {   
-
+    // forward delcaration to Nexus (see below comment)
     class Nexus; 
 
     /**
      * @brief Queues structural changes to apply all at once when there is no iteration going on. 
      * 
-     * The Nexus will automatically route structual changes through the CommandBuffer when the user calls them during iteration. 
+     * The Nexus will automatically route structural changes through the CommandBuffer when the user calls them during iteration. 
      * 
      * Modyfing containers while iterating through them should generally be avoided and causes undefined behavior. Becuase ImagoECS 
      * is contantly iterating over several containers, this becomes a big issue. The CommandBuffer is used for structural changes in component pools
      * (deleting Entity's, modyfing component data) to solve this problem. The CommandBuffer stores all changes in vectors and applies the operations 
-     * in the order they were recored all at once when flush() is called. 
+     * in flush(). It does all binds, all unbinds, and then all destroys. Note that his means and unbind then bind of the same component in one frame
+     * leaves the entity **without** it. 
      * 
      */
     class CommandBuffer {
@@ -38,8 +39,8 @@ namespace Imago::ECS
     public:
         
         /**
-         * @brief Construct a new Command Buffer object with the Nexus that it will apply its queued operatoins to 
-         * @param nexus The Nexus this buffer will flush its operations into. 
+         * @brief Construct a new Command Buffer object with the Nexus that it will apply its queued operations to 
+         * @param nexus The Nexus this buffer will flush its operations into 
          */
         explicit CommandBuffer(Nexus& nexus); 
 
@@ -72,7 +73,7 @@ namespace Imago::ECS
         void defer_unbind(Entity e); 
 
         /**
-         * @brief go through all the defer queues and actually apply the operations to the associated Nexus. 
+         * @brief Goes through all the defer queues and actually applies the operations to the associated Nexus
          */
         void flush(); 
     }; 

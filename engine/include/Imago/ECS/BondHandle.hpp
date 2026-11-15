@@ -1,7 +1,7 @@
 /**
  * @file BondHandle.hpp
  * @author Shane David
- * @brief Defins the BondHandle, this is the view that users will access to iterate over the Entities of a Bond within a system. 
+ * @brief Defines the BondHandle, this is the view that users will access to iterate over the Entities of a Bond within a system. 
  */
 
 #pragma once 
@@ -18,13 +18,14 @@ namespace Imago::ECS
 
     // Note: BondHandle<Components...> can take any number of component types. This is using a C++ variadic template parameter pack
 
+    //TODO: direct component _dense access instead of entities 
     /**
      * @brief Lightweight view over a Bond. This is returned by value from Nexus::Bond<Components...>() and does not deal
      * with the structural changes relevant for bonds but just provieds an iterorator like SurveyHandle does.
      * 
      * Instead of checking every component for memebership in each component pool it just directly iterates over the Bond's sorted region. 
      * 
-     * @tparam Components  The component types of the Bond. 
+     * @tparam Components The component types of the Bond. 
      */
     template <typename... Components> 
     class BondHandle {

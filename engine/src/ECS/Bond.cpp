@@ -64,7 +64,7 @@ namespace Imago::ECS
 
     void Bond::on_component_unbound(Entity e) 
     {
-        // return if the entity still is not in every component pool
+        // return if the entity is not in every component pool
         if (!matches_all(e)) return; 
 
         // return if the entity is already considered not part of the bond

@@ -85,7 +85,7 @@ namespace Imago::Engine
         const ActionState* get(ActionId action) const; 
 
         /**
-         * @brief Non-const overlaod of InputState::get() so that inner methods that modify the ActionState 
+         * @brief Non-const overload of InputState::get() so that inner methods that modify the ActionState 
          * do not have to repeat the verification step. 
          * @param action The id of the action to get the state for. 
          * @return ActionState* Pointer to the action state. 

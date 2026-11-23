@@ -61,8 +61,11 @@ namespace Imago::Engine
     }
 
     /**
-     * @brief 
+     * @brief Broadcaster acts as ImagoEngine's event system. It lets systems communicate without knowing about eachother.
      * 
+     * Subscribed systems subscribe to an event and the Broadcaster stores them as type-erased std::function<void(SceneContext&, const void*)> and 
+     * their addresses in a Subscriber wrapper. When emit is called for that even the Broadcaster iterates through all the subscribers
+     * corresponding to that event and invokes them. 
      */
     class Broadcaster {
     private:

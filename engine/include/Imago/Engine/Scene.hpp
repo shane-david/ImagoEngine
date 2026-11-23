@@ -20,7 +20,6 @@ namespace Imago::Engine
      * 
      * A Scene owns everything that its systems run against. It owns its own copy of the SceneContext with `nexus` and `broadcaster` pointing
      * at its own members so the Scene must stay self-consistent for its whole life. 
-     * 
      */
     class Scene {
     protected:
@@ -34,8 +33,8 @@ namespace Imago::Engine
         virtual void on_load() = 0; 
 
         /**
-         * @brief Called by `unload()`. This is optional in user defintions of Scenes because most clean-up is handled automatically but any additional
-         * clean up that ought to happen during the termination of a Scene should go here. 
+         * @brief Called by `unload()`. This is optional in user definitions of Scenes because most clean-up is handled automatically but any additional
+         * clean up that ought to happen during the termination of a Scene should go here 
          */
         virtual void on_unload() {} 
 
@@ -48,8 +47,8 @@ namespace Imago::Engine
     public:
         
         /**
-         * @brief Construct a new Scene object and copies the game's persistent context and filles the 
-         * remaining pointers with this scenes instance of the Nexus and Broadcaster
+         * @brief Construct a new Scene object and copies the game's persistent context and fills the 
+         * remaining pointers with this scene's instance of the Nexus and Broadcaster
          * @param gameCtx Game's SceneContext with global Game objects filled in. 
          */
         explicit Scene(const SceneContext& gameCtx); 
@@ -57,7 +56,7 @@ namespace Imago::Engine
         // need a default destructor because this scene is abstract
         virtual ~Scene() = default; 
 
-        // explicitly dissalow copy behaviour because the context holds pointers into this object 
+        // explicitly dissalow copy and move behaviour because the context holds pointers into this object 
         Scene(const Scene&) = delete; 
         Scene& operator=(const Scene&) = delete; 
         Scene(Scene&&) = delete; 
@@ -74,7 +73,7 @@ namespace Imago::Engine
         void unload(); 
 
         /**
-         * @brief Runs one frame, ticks the scheduler, then flushes the Nexus. 
+         * @brief Runs one frame by ticking the scheduler, then flushes the Nexus. 
          * @param dt Real time since the last frame, in seconds. 
          */
         void update(float dt); 

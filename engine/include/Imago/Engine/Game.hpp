@@ -59,7 +59,7 @@ namespace Imago::Engine
          * 
          * - VSync turns frame limit off. The window waits for the monitor's refresh, so the 
          *   frame rate matches the display. It prevents screen tearing and uses the least CPU and GPU
-         *   but the fram rate depends on the player's monitor.
+         *   but the frame rate depends on the player's monitor.
          * 
          * - Limited turns VSync off and the frame rate limit is set the the targetFps in GameSettings. SFML sleeps at 
          *   the end of each frame to hold that framerate regardless of the monitor. The frame rate is stable and predictable 

@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <cstdint> // for unit32_t for ActionId
+#include <cstdint> // for uint32_t for ActionId
 #include <vector> // for storing ActionStates
 #include <unordered_map> // for storing string to action map
 #include <string> // for action names 
@@ -14,7 +14,7 @@
 
 namespace Imago::Engine
 {
-    /// @brief Id of a registered action, Resolve a name once with action_id() and cache it for the fast path. 
+    /// @brief Id of a registered action, resolve a name once with action_id() and cache it for the fast path. 
     using ActionId = uint32_t; 
 
     /// @brief The bits that should be returned by action_id() when a name is not registered. 
@@ -64,7 +64,7 @@ namespace Imago::Engine
         ActionId add_action(const std::string& name);
 
         /**
-         * @brief Set an action's strength, derives held, and the latches began/ended edges when held changes. 
+         * @brief Set an action's state, derives held, and the latches began/ended edges when held changes. 
          * @param action The action to set the strength for. 
          * @param strength The value to insert as the action's strength. 
          * @param held Whether or not the input is past its own threshold 

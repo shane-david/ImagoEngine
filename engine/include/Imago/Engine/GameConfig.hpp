@@ -1,7 +1,7 @@
 /**
  * @file GameConfig.hpp
  * @author Shane David
- * @brief Defines the settings Game is constructed with.
+ * @brief Defines the settings Game is constructed with
  */
 
 #pragma once

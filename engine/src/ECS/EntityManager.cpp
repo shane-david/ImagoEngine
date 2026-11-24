@@ -3,7 +3,6 @@
 #include <cassert> // for error checking with entity index and generation bounds
 #include <spdlog/spdlog.h> // for error logging 
 
-// scoped to Imago::ECS
 namespace Imago::ECS 
 {
 
@@ -16,7 +15,7 @@ namespace Imago::ECS
         // recycle and index if there is a free one 
         if (_freeIndices.size() > 0) {
 
-            // get the last freed index and remove it
+            // get the oldest freed index and remove it
             uint32_t lastFreed = _freeIndices.front(); 
             _freeIndices.pop(); 
 
@@ -49,7 +48,7 @@ namespace Imago::ECS
 
         // for release, if an entity is invalid just dont worry about destroying it 
         if (!valid) {
-            spdlog::debug("[ENTITYMANAGER] Destroy called on an already-invalid Entity (index {}, generation{})", get_entity_index(e), get_entity_generation(e)); 
+            spdlog::debug("[EntityManager] Destroy called on an already-invalid Entity (index {}, generation{})", get_entity_index(e), get_entity_generation(e)); 
             return; 
         }
 

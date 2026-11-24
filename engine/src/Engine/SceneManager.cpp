@@ -98,7 +98,7 @@ namespace Imago::Engine
         auto factoryIt = _factories.find(target);
 
         //TODO: integrate assert into logger 
-        assert(factoryIt != _factories.end() && "[SceneManage] You are tyring to switch to a Scene that has not been registered!");
+        assert(factoryIt != _factories.end() && "[SceneManager] You are tyring to switch to a Scene that has not been registered!");
 
         // build the scene from the stored function pointer
         std::unique_ptr<Scene> scene = factoryIt->second(_gameCtx); 

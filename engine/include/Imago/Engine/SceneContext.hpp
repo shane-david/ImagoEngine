@@ -6,9 +6,6 @@
 
 #pragma once
 
-#include <string> // for storing action names
-#include <unordered_map> // for storing inputs (action names -> boolean)
-
 // NOTE: since SceneContext only stores pointers we just need to do forward declarations instead of full types 
 // to avoid circular includes and make the .hpp file cheaper 
 namespace sf { class RenderWindow; }
@@ -23,7 +20,7 @@ namespace Imago::Engine
     class InputState; 
 
     /**
-     * @brief Gives systems access to the persisten engine objects they could need. 
+     * @brief Gives systems access to the persistent engine objects they could need. 
      * 
      * This is created by the Game which will fill in what it owns (window, assets, input), and leave the pointers 
      * it does not own as nullptr. It will then pass it down through the SceneManager to the Scene which will fill in
@@ -34,7 +31,7 @@ namespace Imago::Engine
         ECS::Nexus* nexus = nullptr; ///< the active Scene's nexus
         Broadcaster* broadcaster = nullptr; ///< the active Scene's broadcaster
         EngineControl* engine = nullptr; ///< how systems send requests to the Game (switch_scene and quit)
-        InputState* input = nullptr; ///< action name -> currently active input map 
+        InputState* input = nullptr; ///< how users query for actions 
         AssetManager* assets = nullptr; ///< the loaded assets, owned by the Game
         sf::RenderWindow* window = nullptr; ///< the render window, owned by the Game 
     }; 

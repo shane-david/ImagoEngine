@@ -15,10 +15,14 @@ namespace Imago::Engine
     // NOTE: again, here we use a forward declaration because we do not need to know the full type of SceneContext
     struct SceneContext; 
 
+    /**
+     * @brief 
+     * 
+     */
     class SystemScheduler {
     public:
         
-        /// @brief Function pointer signature for a scheduler system. 
+        /// @brief Function pointer signature for a scheduled system. 
         using SystemFn = void(*)(SceneContext&, float); 
 
     private:
@@ -36,21 +40,21 @@ namespace Imago::Engine
         std::vector<SystemFn> _fixedSystems; ///< fixed-timestep systems (could be core or user) 
 
         /**
-         * @brief Adds requested system to the selected list unless it is already there.
+         * @brief Adds requested system to the selected list unless it is already there
          * 
-         * Asserts that the system is not null. 
+         * Asserts that the system is not null
          * 
-         * @param systems The list that should be added to. 
-         * @param system The system to add to the list. 
+         * @param systems The list that it should be added to
+         * @param system The system to add to the list
          */
         static void add_system(std::vector<SystemFn>& systems, SystemFn system); 
 
         /**
-         * @brief Removes requested system from selected list. 
+         * @brief Removes requested system from selected list
          * 
-         * @param systems List to remove the system from. 
-         * @param system System to remove. 
-         * @return true if something was removed. 
+         * @param systems List to remove the system from
+         * @param system System to remove
+         * @return true if something was removed
          */
         static bool remove_system(std::vector<SystemFn>& systems, SystemFn system); 
 
@@ -62,41 +66,46 @@ namespace Imago::Engine
          */
         explicit SystemScheduler(SceneContext& ctx); 
 
-        // explicityly disallow copy behavior
+        // explicityly disallow copy and move behavior
         SystemScheduler(const SystemScheduler&) = delete; 
         SystemScheduler& operator=(const SystemScheduler&) = delete; 
+        SystemScheduler(SystemScheduler&&) = delete; 
+        SystemScheduler& operator=(SystemScheduler&&) = delete; 
 
         /**
-         * @brief Runs one frame of Scheduler systems. Called once per frame by the Scene. 
-         * @param dt real time since the last frame, in seconds. 
+         * @brief Runs one frame or fixed step of scheduled systems, called once per frame by the Scene 
+         * @param dt real time since the last frame, in seconds
          */
         void tick(float dt); 
 
         /**
          * @brief Registers a core per-frame system that should run before user systems
-         * @param system The core system to register. 
+         * @param system The core system to register
          */
         void register_core(SystemFn system); 
 
         /**
-         * @brief Registers a user per-frame system. 
-         * @param system The user-defined system to register.
+         * @brief Registers a user per-frame system
+         * @param system The user-defined system to register
          */
         void register_update(SystemFn system);
 
         /**
-         * @brief Registers a fiexed timestep system. Called with the fixed step, not the frame time. 
+         * @brief Registers a fiexed timestep system. Called with the fixed step, not the frame time
          * @param system The fixed system to register. 
          */
         void register_fixed(SystemFn system); 
         
         /**
-         * @brief Removes a system from every list it is in. Warns if it was not registered anywhere. 
+         * @brief Removes a system from every list it is in 
+         * 
+         * Warns if it was not registered anywhere
+         * 
          * @param system The system to unregister. 
          */
         void unregister(SystemFn system); 
 
-        //NOTE: This will mainly be used once we have editor integratoin so that the user does not have to change the order in code
+        //NOTE: This will mainly be used once we have editor integration so that the user does not have to change the order in code
         /**
          * @brief Set the user order object based off of a order vector they have arranged in the editor, 
          * @param order The order vector that the user systems should match. 
@@ -104,19 +113,19 @@ namespace Imago::Engine
         void set_user_order(std::vector<SystemFn> order); 
 
         /**
-         * @brief Sets the fiexed step size in seconds. Must be greater than 0
-         * @param timestep What the new timestep should be. 
+         * @brief Sets the fixed step size in seconds, must be greater than 0
+         * @param timestep What the new timestep should be
          */
         void set_fixed_timestep(float timestep); 
 
         /**
-         * @brief Sets the most fixed steps that can run in one tick. Must be greater than 0. 
-         * @param maxSteps What the new max should be. 
+         * @brief Sets the most fixed steps that can run in one tick, must be greater than 0
+         * @param maxSteps What the new max should be
          */
         void set_max_fixed_steps(uint32_t maxSteps);
 
         /**
-         * @brief Returns the fraction of the fiexed step left in the accumulator (0 to >1). For render interpolation. 
+         * @brief Returns the fraction of the fiexed step left in the accumulator (0 to <1) (For render interpolation)
          */
         float get_alpha() const; 
     }; 

@@ -38,7 +38,7 @@ namespace Imago::Engine
                 system(_ctx, _fixedTimestep); 
             }
 
-            // tell the InputState the the fixes step is over
+            // tell the InputState the the fixed step is over
             if (input) input->end_fixed_step(); 
 
             // remove a step out of the accumulator and progress steps

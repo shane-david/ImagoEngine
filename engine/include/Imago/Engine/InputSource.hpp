@@ -77,7 +77,7 @@ namespace Imago::Engine
     constexpr bool operator==(const GamepadAxisSource& a, const GamepadAxisSource& b) { return a.axis == b.axis; }
     constexpr bool operator!=(const GamepadAxisSource& a, const GamepadAxisSource& b) { return !(a==b); }
 
-    // NOTe: we use a standard variant here so that all InputSources can be stoed in the same container in the InputHandler. 
+    // NOTE: we use a standard variant here so that all InputSources can be stoed in the same container in the InputHandler. 
     // we use std::variant instead of other type-erasure or polymorphic methods for simplicity and because the set of kinds 
     // is closed and know to the engine at compile time. 
     

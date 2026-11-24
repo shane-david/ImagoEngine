@@ -14,7 +14,7 @@ namespace Imago::Engine
     /**
      * @brief The user's only way to talk to the Game from inside a system or Scene load/unload. 
      * 
-     * Every method only records a request and returns immediatley. Game then consuems and applies the request at the end
+     * Every method only records a request and returns immediatley. Game then consumes and applies the request at the end
      * of each frame, so the rest of the current fram still runs after a call. 
      */
     class EngineControl {

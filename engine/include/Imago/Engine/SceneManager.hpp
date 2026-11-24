@@ -17,18 +17,18 @@ namespace Imago::Engine
 {
 
     /**
-     * @brief The manager and the only object that creates, switches, and updates Scenes.
+     * @brief The manager is the only object that creates, switches, and updates Scenes.
      * 
-     * Scenes are registerd by name with register_scene and built on first use. Only one Scene can 
+     * Scenes are registered by name with register_scene and built on first use. Only one Scene can 
      * be active at a time. Switching is defferred to the end of the current frame. 
      */
     class SceneManager {
     public:
         
-        // NOTE: SceneFactoryFn is a function pointer to an instanc of the static create_scene() method that exists for each 
+        // NOTE: SceneFactoryFn is a function pointer to an instance of the static create_scene() method that exists for each 
         // registered Scene Type. Creating a Scene requires knowing its concrete type at compile time but not only is the Scene
-        // to build chosen at Runtime but the SceneManager cannot even know what user-defined Scenes even exist at compile time. 
-        // To solve this we use factories. register_scene<T> is the one place that the Scene type is known at copile time so it 
+        // to build chosen at runtime but the SceneManager cannot even know what user-defined Scenes even exist at compile time. 
+        // To solve this we use factories. register_scene<T> is the one place that the Scene type is known at compile time so it 
         // instantiates create_scene<T> and stores a pointer ot it. The SceneManager can then just call the stored function 
         // without even having to know what type the Scene it is instantiating is.
 
@@ -38,22 +38,22 @@ namespace Imago::Engine
     private:
         
         /**
-         * @brief The factory that register_scene stores for T. Builds a T and returns it as a Scene. 
-         * @tparam T The type of the Scene to build. 
-         * @param gameCtx SceneContext filled with the global engine objects Game owns. 
-         * @return std::unique_ptr<Scene> The Scene that was built.
+         * @brief The factory that register_scene stores for T. Builds a T and returns it as a Scene
+         * @tparam T The type of the Scene to build
+         * @param gameCtx SceneContext filled with the global engine objects Game owns
+         * @return std::unique_ptr<Scene> to the Scene that was built
          */
         template <typename T>
         static std::unique_ptr<Scene> create_scene(const SceneContext& gameCtx); 
 
         /**
-         * @brief Stores a factory under a name. Asserts the name is not already registered.
-         * @param name The name of the factory. 
-         * @param factory the function pointer to the create_scene<T> factory. 
+         * @brief Stores a factory under a name, ssserts the name is not already registered
+         * @param name The name of the factory
+         * @param factory the function pointer to the create_scene<T> factory
          */
         void add_factory(const std::string& name, SceneFactoryFn factory); 
 
-        const SceneContext& _gameCtx; ///< The Game Context filled with the global engine objects Game owns. Copied to every Scene's individual context.
+        const SceneContext& _gameCtx; ///< The Game Context filled with the global engine objects Game owns, copied to every Scene's individual context
 
         // scene storage
 
@@ -64,26 +64,28 @@ namespace Imago::Engine
 
         // switch data
 
-        bool _switchPending; ///< whether or not a switch has been requested
+        bool _switchPending = false; ///< whether or not a switch has been requested
         std::string _pendingName; ///< the name of the scene to switch to
         bool _pendingPersist = false; ///< whether or not to suspend or destroy the scene after a witch
 
     public:
 
         /**
-         * @brief Construct a new SceneManager object, instantiating gameCtx so it can be copied into every Scene it builds.
-         * @param gameCtx SceneContext filled with the global engine objecst that the Game owns. 
+         * @brief Construct a new SceneManager object, instantiating gameCtx so it can be copied into every Scene it builds
+         * @param gameCtx SceneContext filled with the global engine objecst that the Game owns
          */
         explicit SceneManager(const SceneContext& gameCtx); 
 
         /**
-         * @brief Unloads the active scene then destroys every live scene in _scenes. 
+         * @brief Unloads the active scene then destroys every live scene in `_scenes`
          */
         ~SceneManager(); 
 
-        // explicitly dissallow copy behavior 
+        // explicitly dissallow copy and move behavior 
         SceneManager(const SceneManager&) = delete; 
         SceneManager& operator=(const SceneManager&) = delete; 
+        SceneManager(SceneManager&&) = delete;
+        SceneManager& operator=(SceneManager&&) = delete; 
 
         /**
          * @brief Registers a Scene type under a name. The scene is not build on registration but instead a factory to a method that builds the Scene 
@@ -95,7 +97,7 @@ namespace Imago::Engine
         void register_scene(const std::string& name); 
 
         /**
-         * @brief Records a request to switch scenes. The switch is not actually applied until the end of the next frame.
+         * @brief Records a request to switch scenes. The switch is not actually applied until the end of the frame.
          * If several switch requests occur during the same frame, the last one wins. 
          * @param name The name of the registered scene to switch to. 
          * @param persist Whether or not the scene should be suspended (true) or completely destroyed (false).

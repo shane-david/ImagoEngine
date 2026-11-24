@@ -1,7 +1,7 @@
 /**
  * @file InputHandler.hpp
  * @author Shane David
- * @brief Defines InputHandler, which owns te inputs and the InputState and turns raw events into action state. 
+ * @brief Defines InputHandler, which owns the inputs and the InputState and turns raw events into action state. 
  */
 
 #pragma once
@@ -46,7 +46,7 @@ namespace Imago::Engine
         /**
          * @brief Takes magnitude of an input and peforms dead zone, thershold, and hysterisis math to set the value accordingly determine whether or not it is down. 
          * @param source InputSource to set the value of 
-         * @param magnitude magnitude of that input
+         * @param magnitude Magnitude of that input
          */
         void set_source_value(const InputSource& source, float magnitude); 
 
@@ -63,10 +63,10 @@ namespace Imago::Engine
 
     public:
         
-        /// @brief Constructs and InputHandler object. 
+        /// @brief Constructs an InputHandler object. 
         InputHandler() = default; 
 
-        // explicitly disallow copy behavior
+        // explicitly disallow copy and move behavior
         InputHandler(const InputHandler&) = delete; 
         InputHandler& operator=(const InputHandler&) = delete;
         InputHandler(InputHandler&&) = delete;

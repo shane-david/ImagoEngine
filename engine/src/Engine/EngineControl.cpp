@@ -23,7 +23,7 @@ namespace Imago::Engine
         _pendingSwitch = SwitchRequest{name, persist}; 
     }
 
-    // NOTE: std::option is a C++ class that manages a value that may ore may not be present. It is used here 
+    // NOTE: std::optional is a C++ class that manages a value that may ore may not be present. It is used here 
     // because we want to return the pending switch whenever it is called, but there might not be one. We use 
     // std::exchagne her to put a std::nullopt into _pendingSwitch once we return it so that we do not keep 
     // a switch pending once it has been requested 

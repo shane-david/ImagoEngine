@@ -17,7 +17,7 @@ namespace Imago::ECS
 {
     
     /**
-     * @brief A Bond permanently reorders every pool within it so that every Entity that has all of the components in the Bond sits at the fround of every pool, in the same index at each.
+     * @brief A Bond permanently reorders every pool within it so that every Entity that has all of the components in the Bond sits at the front of every pool, in the same index at each.
      * Bonds should be used for iterative systems that will execute every frame in every situation (Rendering, Physics, ect.) becuase the time save from no longer checking whether or not 
      * each Entity has every component starts to become significant for these systems. 
      * 
@@ -32,6 +32,7 @@ namespace Imago::ECS
         std::vector<SparseSetBase*> _ownedPools; ///< pools this Bond has exclusive ownership of (right to reorder)
         size_t _bondSize = 0; ///< number of Entities at the front of every pool that have all Bonded components 
 
+        // Nexus is the only object that can construct and own a Bond, so constructor is private and Nexus is friend
         friend class Nexus; 
         
         /**
@@ -49,7 +50,7 @@ namespace Imago::ECS
         bool matches_all(Entity e) const; 
 
         /**
-         * @brief Swaos e with whichever Entity is currently at the requestd position. 
+         * @brief Swaps e with whichever Entity is currently at the requested position. 
          * @param e The Entity to move. It should be owned in every pool if it is being swapped to the front. 
          * @param pos The position to move the Entity to. 
          */

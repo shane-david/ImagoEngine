@@ -7,7 +7,7 @@ namespace Imago::Engine
 {
 
     Broadcaster::Broadcaster(SceneContext& ctx)
-        : _ctx(ctx) { _broadcastDepth = 0; }
+        : _ctx(ctx) { }
 
     std::vector<Broadcaster::Subscriber>::iterator Broadcaster::find_subscriber(std::vector<Subscriber>& subscribers, ErasedFn system) 
     {

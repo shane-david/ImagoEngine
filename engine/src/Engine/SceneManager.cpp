@@ -67,10 +67,10 @@ namespace Imago::Engine
         _pendingPersist = persist; 
     }
 
-    void SceneManager::apply_pending_switch()
+    bool SceneManager::apply_pending_switch()
     {
         // do not apply if there is not a switch pending
-        if (!_switchPending) return; 
+        if (!_switchPending) return false; 
 
         // copy class-wide switch data in locals so it does not ruin the switch if it is changed during this method's execution
         std::string target = _pendingName;
@@ -112,6 +112,9 @@ namespace Imago::Engine
 
         // load the scene
         _active->load(); 
+
+        // tell the caller that there was a scene switch
+        return true; 
     }
 }
 

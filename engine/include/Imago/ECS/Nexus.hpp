@@ -363,7 +363,7 @@ namespace Imago::ECS
         SparseSet<T>* pool = find_pool<T>();
         if (pool == nullptr) return; 
 
-        // notify the bonds about the unbind if any (this goes before the removal)
+        // notify the bonds about the unbind if any (this goes before the removal, order matters)
         Bond* currentBond = find_bond<T>();
         if (currentBond != nullptr) {
             currentBond->on_component_unbound(e); 
@@ -545,7 +545,7 @@ namespace Imago::ECS
     void CommandBuffer::defer_unbind(Entity e) 
     {
         // create and push back the lambda for an unbind command
-        _unbindQueue.push_back([this, e]() {
+        _unbindQueue.push_back([this, e, component = std::move(component)]() mutable {
             _nexus.unbind_immediate<T>(e); 
         }); 
     }

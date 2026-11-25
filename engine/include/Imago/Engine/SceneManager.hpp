@@ -106,8 +106,9 @@ namespace Imago::Engine
 
         /**
          * @brief Actually switch the pending Scene. Called by Game at the end of each frame. 
+         * @return true if there was a pending switch that was applied
          */
-        void apply_pending_switch(); 
+        bool apply_pending_switch(); 
 
         /**
          * @brief Updates the active scene. Does nothing if there is no active Scene. 

@@ -1,25 +1,46 @@
+# ImagoEngine code style
 BasedOnStyle: LLVM
-IndentWidth: 2
-TabWidth: 2
+Language: Cpp
+Standard: c++17
+
+# Indentation
+IndentWidth: 4
+TabWidth: 4
 UseTab: Never
+AccessModifierOffset: -4          # public:/private: line up with the class keyword
+NamespaceIndentation: All
+
+# Line length
 ColumnLimit: 100
-BreakBeforeBraces: Attach
-AllowShortFunctionsOnASingleLine: None
+
+# Pointers and references attach to the type: T& value, T* ptr
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+# Braces
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterNamespace: true            # namespace Imago::ECS
+                                  # {
+  AfterFunction: true             # void foo()
+                                  # {
+  AfterClass: false               # check: true if class braces are on their own line
+  AfterStruct: false              # check: same as AfterClass
+  AfterEnum: false
+  AfterControlStatement: Never    # if (x) {
+  BeforeElse: false               # } else {
+  BeforeCatch: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+
+# Short forms
+AllowShortFunctionsOnASingleLine: Inline   # one-line getters inside a class are fine
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
-IndentCaseLabels: true
-AccessModifierOffset: -2
-PointerAlignment: Left
-SpaceBeforeParens: ControlStatements
-SortIncludes: true
-AlignConsecutiveDeclarations:
-  Enabled: true
-  AcrossEmptyLines: false
-  AcrossComments: false
-AlignConsecutiveAssignments:
-  Enabled: true
-  AcrossEmptyLines: false
-  AcrossComments: false
-AlignTrailingComments:
-  Kind: Always
-  OverEmptyLines: 1
+AllowShortBlocksOnASingleLine: Never
+
+# Includes and comments
+SortIncludes: Never               # don't reorder includes (some order is load-bearing)
+FixNamespaceComments: false       # don't add "// namespace X" after closing braces
+ReflowComments: false             # don't rewrap Doxygen comments

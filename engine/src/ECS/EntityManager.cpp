@@ -48,7 +48,7 @@ namespace Imago::ECS
 
         // for release, if an entity is invalid just dont worry about destroying it 
         if (!valid) {
-            spdlog::debug("[EntityManager] Destroy called on an already-invalid Entity (index {}, generation{})", get_entity_index(e), get_entity_generation(e)); 
+            spdlog::warn("[EntityManager] Destroy called on an already-invalid Entity (index {}, generation{})", get_entity_index(e), get_entity_generation(e)); 
             return; 
         }
 

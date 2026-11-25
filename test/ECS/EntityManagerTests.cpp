@@ -1,4 +1,9 @@
-// test/ECS/EntityManagerTests.cpp
+/**
+ * @file EntityManagerTests.cpp
+ * @brief Tests EntityManager: creation, destruction, validation, and FIFO index recycling with
+ * generation bumps.
+ */
+
 #include <catch2/catch_test_macros.hpp>
 
 #include "Imago/ECS/Entity.hpp"
@@ -6,20 +11,18 @@
 
 using namespace Imago::ECS;
 
-#include <vector>
-
-TEST_CASE("First created entity has index 0 and generation 0", "[entitymanager]")
+TEST_CASE("First created entity has index 0 and generation 0", "[EntityManager]")
 {
     EntityManager manager;
 
     Entity e = manager.create();
 
-    REQUIRE(get_entity_index(e) == 0);
-    REQUIRE(get_entity_generation(e) == 0);
-    REQUIRE(manager.is_valid(e));
+    CHECK(get_entity_index(e) == 0);
+    CHECK(get_entity_generation(e) == 0);
+    CHECK(manager.is_valid(e));
 }
 
-TEST_CASE("Sequential creates get sequential indices", "[entitymanager]")
+TEST_CASE("Sequential creates get sequential indices", "[EntityManager]")
 {
     EntityManager manager;
 
@@ -27,23 +30,23 @@ TEST_CASE("Sequential creates get sequential indices", "[entitymanager]")
     Entity second = manager.create();
     Entity third = manager.create();
 
-    REQUIRE(get_entity_index(first) == 0);
-    REQUIRE(get_entity_index(second) == 1);
-    REQUIRE(get_entity_index(third) == 2);
-    REQUIRE(manager.get_alive_count() == 3);
+    CHECK(get_entity_index(first) == 0);
+    CHECK(get_entity_index(second) == 1);
+    CHECK(get_entity_index(third) == 2);
+    CHECK(manager.get_alive_count() == 3);
 }
 
-TEST_CASE("Destroy invalidates the entity", "[entitymanager]")
+TEST_CASE("Destroy invalidates the entity", "[EntityManager]")
 {
     EntityManager manager;
     Entity e = manager.create();
 
     manager.destroy(e);
 
-    REQUIRE_FALSE(manager.is_valid(e));
+    CHECK_FALSE(manager.is_valid(e));
 }
 
-TEST_CASE("Destroyed index is recycled with a bumped generation", "[entitymanager]")
+TEST_CASE("Destroyed index is recycled with a bumped generation", "[EntityManager]")
 {
     EntityManager manager;
     Entity first = manager.create();
@@ -51,27 +54,27 @@ TEST_CASE("Destroyed index is recycled with a bumped generation", "[entitymanage
 
     Entity second = manager.create();
 
-    REQUIRE(get_entity_index(second) == get_entity_index(first));
-    REQUIRE(get_entity_generation(second) == get_entity_generation(first) + 1);
+    CHECK(get_entity_index(second) == get_entity_index(first));
+    CHECK(get_entity_generation(second) == get_entity_generation(first) + 1);
 }
 
-TEST_CASE("Stale handle is invalid after its index is recycled", "[entitymanager]")
+TEST_CASE("Stale handle is invalid after its index is recycled", "[EntityManager]")
 {
     EntityManager manager;
     Entity first = manager.create();
     manager.destroy(first);
     Entity second = manager.create(); // reuses first's index, bumped generation
 
-    REQUIRE_FALSE(manager.is_valid(first));
-    REQUIRE(manager.is_valid(second));
+    CHECK_FALSE(manager.is_valid(first));
+    CHECK(manager.is_valid(second));
 }
 
-TEST_CASE("Free list is FIFO across multiple destroys", "[entitymanager]")
+TEST_CASE("Free list is FIFO across multiple destroys", "[EntityManager]")
 {
     EntityManager manager;
     Entity a = manager.create(); // index 0
     Entity b = manager.create(); // index 1
-    Entity c = manager.create(); // index 2
+    manager.create();            // index 2
 
     manager.destroy(a); // free list: [0]
     manager.destroy(b); // free list: [0, 1]
@@ -79,40 +82,50 @@ TEST_CASE("Free list is FIFO across multiple destroys", "[entitymanager]")
     Entity recycledFirst = manager.create();  // should reuse index 0, not 1
     Entity recycledSecond = manager.create(); // should reuse index 1
 
-    REQUIRE(get_entity_index(recycledFirst) == 0);
-    REQUIRE(get_entity_index(recycledSecond) == 1);
+    CHECK(get_entity_index(recycledFirst) == 0);
+    CHECK(get_entity_index(recycledSecond) == 1);
 }
 
-TEST_CASE("NULL_ENTITY is never valid", "[entitymanager]")
+TEST_CASE("NULL_ENTITY is never valid", "[EntityManager]")
 {
     EntityManager manager;
     manager.create(); // give it at least one real entity to compare against
 
-    REQUIRE_FALSE(manager.is_valid(NULL_ENTITY));
+    CHECK_FALSE(manager.is_valid(NULL_ENTITY));
 }
 
-TEST_CASE("get_alive_count reflects creates and destroys", "[entitymanager]")
+TEST_CASE("get_alive_count reflects creates and destroys", "[EntityManager]")
 {
     EntityManager manager;
 
-    REQUIRE(manager.get_alive_count() == 0);
+    CHECK(manager.get_alive_count() == 0);
 
     Entity a = manager.create();
-    Entity b = manager.create();
-    REQUIRE(manager.get_alive_count() == 2);
+    manager.create();
+    CHECK(manager.get_alive_count() == 2);
 
     manager.destroy(a);
-    REQUIRE(manager.get_alive_count() == 1);
+    CHECK(manager.get_alive_count() == 1);
 
     manager.create(); // recycles a's index
-    REQUIRE(manager.get_alive_count() == 2);
+    CHECK(manager.get_alive_count() == 2);
 }
 
-TEST_CASE("Destroying an already-invalid entity is a safe no-op", "[entitymanager]")
+TEST_CASE("Destroying an already-invalid entity is a safe no-op", "[EntityManager]")
 {
     EntityManager manager;
     Entity e = manager.create();
+    Entity other = manager.create();
     manager.destroy(e);
 
     REQUIRE_NOTHROW(manager.destroy(e)); // double-destroy shouldn't crash or corrupt state
+
+    CHECK(manager.get_alive_count() == 1);
+    CHECK(manager.is_valid(other));
+
+    // the index was freed once, so exactly one create recycles it
+    Entity recycled = manager.create();
+    Entity fresh = manager.create();
+    CHECK(get_entity_index(recycled) == get_entity_index(e));
+    CHECK(get_entity_index(fresh) == 2);
 }

@@ -1,10 +1,16 @@
+/**
+ * @file SceneTests.cpp
+ * @brief Tests Scene: context wiring, load/unload hooks with their flushes, and update ticking the
+ * scheduler then flushing deferred structural changes.
+ */
+
 #include <catch2/catch_test_macros.hpp>
 
 #include <string>
 #include <type_traits>
-#include <unordered_map>
 #include <vector>
 
+#include "Imago/Engine/InputState.hpp"
 #include "Imago/Engine/Scene.hpp"
 
 using namespace Imago::Engine;
@@ -14,16 +20,21 @@ namespace
 {
     using Calls = std::vector<std::string>;
 
-    struct Marker { int value; };
-    struct Ping   { int value; };
+    struct Marker {
+        int value;
+    };
+    struct Ping {
+        int value;
+    };
 
     // every test system and hook writes into these, so tests can check what ran and with what
-    Calls gCalls;                          // names of what ran, in order
-    std::vector<float> gDts;               // the dt each count_system call received
-    SceneContext* gSeenCtx = nullptr;      // the SceneContext the last remember_ctx call received
-    Entity gTarget = 0;                    // an Entity the bind_during_tick system works on
-    bool gHadMarkerDuringTick = true;      // whether the Entity had a Marker while the tick was running
-    Entity gCreated = 0;                   // the Entity create_entity_system made
+    Calls gCalls;                     ///< names of what ran, in order
+    std::vector<float> gDts;          ///< the dt each count_system call received
+    SceneContext* gSeenCtx = nullptr; ///< the SceneContext the last remember_ctx call received
+    Entity gTarget = 0;               ///< an Entity the tick systems work on
+    bool gHadMarkerDuringTick = true; ///< whether the Entity had a Marker while the tick ran
+    bool gValidDuringTick = false;    ///< whether gTarget was valid while the tick ran
+    Entity gCreated = 0;              ///< the Entity create_entity_system made
 
     void clear_log()
     {
@@ -32,6 +43,7 @@ namespace
         gSeenCtx = nullptr;
         gTarget = 0;
         gHadMarkerDuringTick = true;
+        gValidDuringTick = false;
         gCreated = 0;
     }
 
@@ -42,29 +54,42 @@ namespace
         gDts.push_back(dt);
     }
 
+    void fixed_count_system(SceneContext&, float dt)
+    {
+        gCalls.push_back("fixed");
+        gDts.push_back(dt);
+    }
+
     void remember_ctx(SceneContext& ctx, float)
     {
         gSeenCtx = &ctx;
     }
 
-    // binds a Marker during the tick and records whether it was visible right away
+    /// @brief Binds a Marker during the tick and records whether it was visible right away.
     void bind_during_tick(SceneContext& ctx, float)
     {
-        ctx.nexus->bind<Marker>(gTarget, Marker{ 3 });
+        ctx.nexus->bind<Marker>(gTarget, Marker{3});
         gHadMarkerDuringTick = ctx.nexus->has<Marker>(gTarget);
     }
 
-    // creates an Entity through the context's nexus pointer
+    /// @brief Destroys gTarget during the tick and records whether it was still valid right after.
+    void destroy_during_tick(SceneContext& ctx, float)
+    {
+        ctx.nexus->destroy(gTarget);
+        gValidDuringTick = ctx.nexus->is_valid(gTarget);
+    }
+
+    /// @brief Creates an Entity through the context's nexus pointer.
     void create_entity_system(SceneContext& ctx, float)
     {
         gCreated = ctx.nexus->create();
-        ctx.nexus->bind<Marker>(gCreated, Marker{ 1 });
+        ctx.nexus->bind<Marker>(gCreated, Marker{1});
     }
 
-    // emits through the context's broadcaster pointer
+    /// @brief Emits through the context's broadcaster pointer.
     void emit_ping_system(SceneContext& ctx, float)
     {
-        ctx.broadcaster->emit(Ping{ 5 });
+        ctx.broadcaster->emit(Ping{5});
     }
 
     void on_ping(SceneContext&, const Ping& e)
@@ -72,8 +97,8 @@ namespace
         gCalls.push_back("ping:" + std::to_string(e.value));
     }
 
-    // A Scene is abstract, so tests derive one. Its hooks do whatever the test switches on,
-    // and its accessors expose the protected members.
+    /// @brief A Scene is abstract, so tests derive one. Its hooks do whatever the test switches
+    /// on, and its accessors expose the protected members.
     class TestScene : public Scene {
     public:
         using Scene::Scene;
@@ -99,7 +124,7 @@ namespace
 
             if (bindOnLoad) {
                 loadedEntity = _nexus.create();
-                _nexus.bind<Marker>(loadedEntity, Marker{ 7 });
+                _nexus.bind<Marker>(loadedEntity, Marker{7});
             }
             if (registerSystemOnLoad) {
                 _scheduler.register_update(count_system);
@@ -112,12 +137,12 @@ namespace
 
             if (bindOnUnload) {
                 unloadedEntity = _nexus.create();
-                _nexus.bind<Marker>(unloadedEntity, Marker{ 9 });
+                _nexus.bind<Marker>(unloadedEntity, Marker{9});
             }
         }
     };
 
-    // only overrides on_load, to show that on_unload is optional
+    /// @brief Only overrides on_load, to show that on_unload is optional.
     class MinimalScene : public Scene {
     public:
         using Scene::Scene;
@@ -141,21 +166,21 @@ TEST_CASE("Scene has the shape the design relies on", "[Scene]")
 TEST_CASE("A Scene wires its own nexus and broadcaster into its context", "[Scene]")
 {
     clear_log();
-    std::unordered_map<std::string, bool> input;
+    InputState input;
     SceneContext gameCtx;
     gameCtx.input = &input;
 
     TestScene scene(gameCtx);
 
-    REQUIRE(scene.context().nexus == &scene.nexus());
-    REQUIRE(scene.context().broadcaster == &scene.broadcaster());
+    CHECK(scene.context().nexus == &scene.nexus());
+    CHECK(scene.context().broadcaster == &scene.broadcaster());
 
     // the Game's persistent pointers are copied over
-    REQUIRE(scene.context().input == &input);
+    CHECK(scene.context().input == &input);
 
     // the Game's own context is not modified
-    REQUIRE(gameCtx.nexus == nullptr);
-    REQUIRE(gameCtx.broadcaster == nullptr);
+    CHECK(gameCtx.nexus == nullptr);
+    CHECK(gameCtx.broadcaster == nullptr);
 }
 
 TEST_CASE("Two Scenes built from the same Game context stay independent", "[Scene]")
@@ -175,10 +200,10 @@ TEST_CASE("Two Scenes built from the same Game context stay independent", "[Scen
         b.scheduler().register_update(remember_ctx);
 
         a.update(0.1f);
-        REQUIRE(gSeenCtx == &a.context());
+        CHECK(gSeenCtx == &a.context());
 
         b.update(0.1f);
-        REQUIRE(gSeenCtx == &b.context());
+        CHECK(gSeenCtx == &b.context());
     }
 
     SECTION("a system's changes go into its own scene's nexus")
@@ -187,8 +212,8 @@ TEST_CASE("Two Scenes built from the same Game context stay independent", "[Scen
 
         a.update(0.1f);
 
-        REQUIRE(a.nexus().has<Marker>(gCreated));
-        REQUIRE_FALSE(b.nexus().has<Marker>(gCreated));
+        CHECK(a.nexus().has<Marker>(gCreated));
+        CHECK_FALSE(b.nexus().has<Marker>(gCreated));
     }
 }
 
@@ -207,13 +232,13 @@ TEST_CASE("A system's emit reaches its own scene's Broadcaster", "[Scene]")
     SECTION("scene a has the subscriber")
     {
         a.update(0.1f);
-        REQUIRE(gCalls == Calls{ "ping:5" });
+        CHECK(gCalls == Calls{"ping:5"});
     }
 
     SECTION("scene b has no subscriber, so nothing runs")
     {
         b.update(0.1f);
-        REQUIRE(gCalls.empty());
+        CHECK(gCalls.empty());
     }
 }
 
@@ -229,9 +254,9 @@ TEST_CASE("load runs on_load and then applies what it deferred", "[Scene]")
 
         scene.load();
 
-        REQUIRE(gCalls == Calls{ "on_load" });
+        CHECK(gCalls == Calls{"on_load"});
         REQUIRE(scene.nexus().has<Marker>(scene.loadedEntity));
-        REQUIRE(scene.nexus().get<Marker>(scene.loadedEntity).value == 7);
+        CHECK(scene.nexus().get<Marker>(scene.loadedEntity).value == 7);
     }
 
     SECTION("systems registered in on_load run on the next update")
@@ -241,8 +266,8 @@ TEST_CASE("load runs on_load and then applies what it deferred", "[Scene]")
         scene.load();
         scene.update(0.5f);
 
-        REQUIRE(gCalls == Calls{ "on_load", "count" });
-        REQUIRE(gDts == std::vector<float>{ 0.5f });
+        CHECK(gCalls == Calls{"on_load", "count"});
+        CHECK(gDts == std::vector<float>{0.5f});
     }
 }
 
@@ -258,18 +283,16 @@ TEST_CASE("unload runs on_unload and then applies what it deferred", "[Scene]")
 
         scene.unload();
 
-        REQUIRE(gCalls == Calls{ "on_unload" });
-        REQUIRE(scene.nexus().has<Marker>(scene.unloadedEntity));
+        CHECK(gCalls == Calls{"on_unload"});
+        CHECK(scene.nexus().has<Marker>(scene.unloadedEntity));
     }
 
     SECTION("a scene that does not override on_unload is harmless")
     {
         MinimalScene scene(gameCtx);
 
-        scene.load();
-        scene.unload();
-
-        SUCCEED();
+        REQUIRE_NOTHROW(scene.load());
+        REQUIRE_NOTHROW(scene.unload());
     }
 }
 
@@ -284,8 +307,24 @@ TEST_CASE("update ticks the scheduler with the real dt", "[Scene]")
     scene.update(0.25f);
     scene.update(0.75f);
 
-    REQUIRE(gCalls == Calls{ "count", "count" });
-    REQUIRE(gDts == std::vector<float>{ 0.25f, 0.75f });
+    CHECK(gCalls == Calls{"count", "count"});
+    CHECK(gDts == std::vector<float>{0.25f, 0.75f});
+}
+
+TEST_CASE("update runs fixed systems through the scene's scheduler", "[Scene]")
+{
+    clear_log();
+    SceneContext gameCtx;
+    TestScene scene(gameCtx);
+
+    scene.scheduler().set_fixed_timestep(0.5f);
+    scene.scheduler().register_fixed(fixed_count_system);
+    scene.scheduler().register_update(count_system);
+
+    scene.update(1.0f);
+
+    CHECK(gCalls == Calls{"fixed", "fixed", "count"});
+    CHECK(gDts == std::vector<float>{0.5f, 0.5f, 1.0f});
 }
 
 TEST_CASE("Structural changes made during a tick only take effect when update ends", "[Scene]")
@@ -295,14 +334,28 @@ TEST_CASE("Structural changes made during a tick only take effect when update en
     TestScene scene(gameCtx);
 
     gTarget = scene.nexus().create();
-    scene.scheduler().register_update(bind_during_tick);
 
-    scene.update(0.1f);
+    SECTION("a bind")
+    {
+        scene.scheduler().register_update(bind_during_tick);
 
-    // the system did not see its own bind while the tick was running
-    REQUIRE_FALSE(gHadMarkerDuringTick);
+        scene.update(0.1f);
 
-    // but update flushed at the end, so it exists now
-    REQUIRE(scene.nexus().has<Marker>(gTarget));
-    REQUIRE(scene.nexus().get<Marker>(gTarget).value == 3);
+        // the system did not see its own bind while the tick was running
+        CHECK_FALSE(gHadMarkerDuringTick);
+
+        // but update flushed at the end, so it exists now
+        REQUIRE(scene.nexus().has<Marker>(gTarget));
+        CHECK(scene.nexus().get<Marker>(gTarget).value == 3);
+    }
+
+    SECTION("a destroy")
+    {
+        scene.scheduler().register_update(destroy_during_tick);
+
+        scene.update(0.1f);
+
+        CHECK(gValidDuringTick);
+        CHECK_FALSE(scene.nexus().is_valid(gTarget));
+    }
 }

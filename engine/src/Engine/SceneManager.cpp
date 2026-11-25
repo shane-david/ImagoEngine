@@ -91,7 +91,7 @@ namespace Imago::Engine
         if (it != _scenes.end()) {
             _active = it->second.get(); 
             _activeName = target; 
-            return; 
+            return true; 
         }
 
         // if it does not already exist try to find the factory

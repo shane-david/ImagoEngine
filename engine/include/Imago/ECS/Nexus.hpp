@@ -536,8 +536,8 @@ namespace Imago::ECS
     void CommandBuffer::defer_bind(Entity e, T component) 
     {
         // create and push back the lambda for a bind command
-        _bindQueue.push_back([this, e, component]() {
-            _nexus.bind_immediate<T>(e, component); 
+        _bindQueue.push_back([this, e, component = std::move(component)]() mutable {
+            _nexus.bind_immediate<T>(e, std::move(component)); 
         }); 
     }
 
@@ -545,7 +545,7 @@ namespace Imago::ECS
     void CommandBuffer::defer_unbind(Entity e) 
     {
         // create and push back the lambda for an unbind command
-        _unbindQueue.push_back([this, e, component = std::move(component)]() mutable {
+        _unbindQueue.push_back([this, e]() {
             _nexus.unbind_immediate<T>(e); 
         }); 
     }

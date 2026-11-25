@@ -74,9 +74,11 @@ namespace Imago::ECS
 
     public:
 
-        // explicitly disallow copy behavior
+        // explicitly disallow copy and move behavior
         Bond(const Bond&) = delete; 
         Bond& operator=(const Bond&) = delete; 
+        Bond(Bond&&) = delete;
+        Bond& operator=(Bond&&) = delete;
 
         /**
          * @brief Returns the number of Entities that are in the bond (have every component) 

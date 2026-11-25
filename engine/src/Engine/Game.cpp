@@ -80,17 +80,21 @@ namespace Imago::Engine
                 default: return { GamepadAxis::Unknown, GamepadAxis::Unknown }; 
             }
         }
+
+        /// @brief Validates the the height and width specified in the config are a proper size
+        const GameConfig& validated(const GameConfig& config) 
+        {   
+            //TODO move assert into logger
+            assert(config.width > 0 && config.height > 0 && "[Game] window size must be non-zeor"); 
+            return config; 
+        }
     }
 
     // --- config --- 
 
     Game::Game(const GameConfig& config)
-        : _config(config), _window(sf::VideoMode({config.width, config.height}), config.title), _sceneManager(_ctx)
+        : _config(validated(config)), _window(sf::VideoMode({config.width, config.height}), config.title), _sceneManager(_ctx)
         {   
-            //TODO integrate assert into the logger
-            // make sure the window is a proper size
-            assert(config.width > 0 && config.height > 0 && "[Game] Window size must be greater than 0!"); 
-
             // fill in the context
             _ctx.engine = &_engineControl; 
             _ctx.input = &_inputHandler.state(); 
@@ -379,8 +383,10 @@ namespace Imago::Engine
             // quit immediately after if isRunning is false 
             if (!_isRunning) break; 
 
-            // apply any pending switches
-            _sceneManager.apply_pending_switch(); 
+            // apply any pending switches, restarting the clock if there was one so the new scene's first dt excludes its load time
+            if (_sceneManager.apply_pending_switch()) {
+                clock.restart(); 
+            }
 
             // --- rendering ---
             _window.clear(); 

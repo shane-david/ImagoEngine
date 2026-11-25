@@ -18,7 +18,7 @@ namespace Imago::Engine
     using ActionId = uint32_t; 
 
     /// @brief The bits that should be returned by action_id() when a name is not registered. 
-    static constexpr ActionId INVALID_ACTION = UINT32_MAX; 
+    inline constexpr ActionId INVALID_ACTION = UINT32_MAX; 
 
     /**
      * @brief What systems query for input (ctx.input->began("jump")). This is only for querying. The InputHandler writes it. 

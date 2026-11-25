@@ -9,7 +9,7 @@
 #include <cstdint> // for uint32_t 
 #include <functional> // for std::function 
 #include <unordered_map> // for std::unordered_map
-#include <algorithm> // for std::find 
+#include <algorithm> // for std::remove_if
 #include <cassert> // for assert
 #include <type_traits> // for checking if T is a const reference in subscribe and unsubscribe 
 #include <spdlog/spdlog.h> // for error logging 
@@ -90,7 +90,7 @@ namespace Imago::Engine
         // NOTE: this variable exists so we can keep track of how many broadcasts emit has made 
         // and not subscribe or unsubscribe from any systems during an emit
 
-        uint32_t _broadcastDepth; ///< counter for how many broadcasts emit is making
+        uint32_t _broadcastDepth = 0; ///< counter for how many broadcasts emit is making
 
         /**
          * @brief Private helper function to find a subscriber given a vector of subscribers.
